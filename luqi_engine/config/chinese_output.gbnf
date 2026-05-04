@@ -1,0 +1,17 @@
+# Chinese-Only Output Grammar for llama.cpp
+# Blocks ALL latin letters, allows CJK + digits + punctuation + roleplay format
+
+root            ::= segment (space segment)*
+segment         ::= action_block | dialogue | inner_thought
+action_block    ::= lparen text rparen
+inner_thought   ::= inner_pre text rparen
+dialogue        ::= text
+text            ::= char+
+char            ::= cjk | digit | punct | sp
+lparen         ::= "\xef\xbc\x88"
+rparen         ::= "\xef\xbc\x89"
+inner_pre      ::= "\xef\xbc\x88\xe5\x86\x85\xe5\xbf\x83\xef\xbc\x9a"
+cjk            ::= [一-鿿]
+digit          ::= [0-9]
+punct          ::= [，。！？：；""''、…—·～《》【】]
+sp             ::= [ \t\n]

@@ -1,0 +1,202 @@
+# 鹿栖AI引擎配置文件
+# 所有参数均为可选，未指定的将使用代码中的默认值
+# 建议通过环境变量 LUQI_API_KEY 设置 API 密钥
+
+performance:
+  target_fps: 30
+  max_cpu_percent: 70.0
+  max_memory_mb: 4096.0
+  response_latency_ms: 300.0
+  inactive_release_threshold_sec: 300.0
+  resource_recovery_efficiency: 0.7
+  object_pool_initial_size: 64
+  async_task_concurrency: 8
+
+worldview:
+  conflict_detection_accuracy: 0.95
+  element_extraction_accuracy: 0.9
+  relation_depth_limit: 5
+  supported_content_types:
+    - text
+    - markdown
+    - json
+    - image_desc
+    - csv
+
+scene:
+  spatial_conflict_accuracy: 0.95
+  max_elements_per_scene: 500
+  environment_update_interval_sec: 1.0
+  time_scale: 1.0
+  weather_transition_duration: 30.0
+
+character:
+  personality_dimensions: 5
+  personality_score_range: [0, 100]
+  behavior_consistency_threshold: 0.95
+  short_term_memory_capacity: 100
+  long_term_memory_capacity: 10000
+  emotional_memory_capacity: 500
+  memory_retrieval_limit: 10
+  personality_adaptation_rate: 0.02
+
+narrative:
+  max_branch_depth: 10
+  core_story_completion_rate: 0.85
+  elasticity_coefficient: 50.0
+  deviation_warning_response_sec: 1.0
+  regression_methods:
+    - natural
+    - event_triggered
+    - forced
+  branch_merge_enabled: true
+  branch_pruning_enabled: true
+  elasticity_min: 0.0
+  elasticity_max: 100.0
+  elasticity_default: 50.0
+  branch_weight_core_story: 0.4
+  branch_weight_character_driven: 0.25
+  branch_weight_random_event: 0.15
+  branch_weight_elasticity: 0.2
+  regression_probability_natural: 0.3
+  regression_probability_event_triggered: 0.7
+  regression_probability_forced: 1.0
+  core_story_min_completion: 0.85
+  deviation_warning_threshold: 0.7
+  node_relevance_threshold: 0.3
+  dead_end_depth_penalty: 0.1
+
+interaction:
+  max_concurrent_characters: 50
+  dialogue_fluency_target: 4.0
+  relationship_dimensions:
+    - friendship
+    - trust
+    - hostility
+    - respect
+  social_rules_enabled: true
+  dialogue_max_rounds: 50
+  context_window_turns: 50
+  key_info_retention_rate: 0.98
+
+llm:
+  sdk_type: openai
+  api_key: "local"  # 本地llama-server无需真实key
+  base_url: "http://127.0.0.1:8082/v1"
+  model: qwen2-0.5b-lora-merged
+  temperature: 0.5
+  max_tokens: 192
+  timeout: 60.0
+  enable_deepseek_optimization: false
+  context_compression_threshold: 8000
+  system_token_budget: 300
+  fallback_thresholds:
+    degraded: 3
+    severely_degraded: 5
+    offline: 10
+
+local_model:
+  model_path: ""
+  classification_threshold: 0.85
+  export_endpoint: ""
+  enable_debug_output: true
+  max_memory_mb: 200.0
+
+desire:
+  desire_dimensions:
+    - physiological
+    - safety
+    - love_belonging
+    - esteem
+    - self_actualization
+    - self_transcendence
+    - sight
+    - hearing
+    - smell
+    - taste
+    - touch
+    - mind
+    - relatedness
+    - transcendence
+    - rootedness
+    - identity
+    - orientation
+  emotion_trigger_threshold: 0.3
+  value_system_weights:
+    physiological: 0.12
+    safety: 0.1
+    love_belonging: 0.1
+    esteem: 0.08
+    self_actualization: 0.08
+    self_transcendence: 0.05
+    sight: 0.06
+    hearing: 0.04
+    smell: 0.03
+    taste: 0.03
+    touch: 0.06
+    mind: 0.07
+    relatedness: 0.06
+    transcendence: 0.04
+    rootedness: 0.03
+    identity: 0.03
+    orientation: 0.02
+  drive_chain_max_depth: 5
+
+mobile:
+  target_device: snapdragon_695
+  max_memory_mb: 2048.0
+  max_cpu_percent: 70.0
+  local_model_memory_mb: 200.0
+  target_fps: 30
+
+cognitive_memory:
+  sensory_capacity: 1000
+  working_capacity: 9
+  short_term_capacity: 100
+  long_term_capacity: 10000
+  emotional_capacity: 500
+  procedural_min_occurrences: 5
+  procedural_min_success_rate: 0.8
+  decay_lambda_short: 0.01
+  decay_lambda_long: 0.001
+  decay_lambda_emotional: 0.003
+  decay_mu_importance: 0.5
+  reinforcement_decay_factor: 0.7
+  surprise_threshold_high: 0.8
+  surprise_threshold_medium: 0.5
+  emotional_surprise_boost: 0.3
+  consolidation_similarity_threshold: 0.85
+  consolidation_min_cluster_size: 3
+  consolidation_interval_seconds: 60.0
+  retrieval_bm25_weight: 0.2
+  retrieval_vector_weight: 0.7
+  retrieval_graph_weight: 0.1
+  retrieval_limit: 10
+  vector_model_name: bge-micro-v2
+  vector_dimension: 64
+  vector_model_path: ""
+  module_idle_timeout_seconds: 300.0
+  module_switch_latency_target_ms: 100.0
+  graph_db_path: ""
+  shared_memory_enabled: true
+
+local_llm:
+  local_llm_enabled: false
+  local_llm_model_path: ""
+  local_llm_n_gpu_layers: 0
+  local_llm_n_ctx: 2048
+  local_llm_max_tokens: 512
+  local_llm_temperature: 0.7
+  local_llm_top_p: 0.9
+
+chaos:
+  sigma: 10.0
+  rho: 28.0
+  beta: 2.6666666666666665
+
+intent_classifier:
+  simple_max_length: 20
+  moderate_max_length: 100
+
+seed: null
+debug_mode: false

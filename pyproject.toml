@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "luqi-engine"
+version = "0.1.0"
+description = "离线优先的拟人化对话引擎 - 鹿栖AI世界基础与角色引擎"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "LuqiAI Team" },
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "httpx>=0.24.0",
+    "jieba>=0.42.1",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+semantic = [
+    "sentence-transformers>=2.2.0",
+    "FlagEmbedding>=1.2.0",
+]
+dev = [
+    "pytest>=7.0",
+    "mypy>=1.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+luqi-engine = "luqi_engine.engine:main"
+
+[project.urls]
+Homepage = "https://github.com/luqiai/luqi-engine"
+Repository = "https://github.com/luqiai/luqi-engine"
+Issues = "https://github.com/luqiai/luqi-engine/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["luqi_engine"]
+
+[tool.pytest.ini_options]
+testpaths = ["luqi_engine/tests"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
