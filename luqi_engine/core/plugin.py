@@ -1,3 +1,5 @@
+"""插件模块 - 实现插件生命周期管理"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

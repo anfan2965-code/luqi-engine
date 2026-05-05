@@ -80,20 +80,18 @@ class TestInitDefault:
 
 
 class TestInitInvalidConfigPath:
-    """测试5: 无效路径，优雅降级到默认配置"""
+    """测试5: 无效路径，抛出异常"""
 
-    def test_nonexistent_path_falls_back_to_default(self):
-        engine = LuqiEngine(config_path="/nonexistent/path/config.yaml")
+    def test_nonexistent_path_raises_error(self):
+        with pytest.raises(Exception):
+            LuqiEngine(config_path="/nonexistent/path/config.yaml")
 
-        assert isinstance(engine.config, EngineConfig)
-
-    def test_invalid_yaml_syntax_falls_back_to_default(self, tmp_path):
+    def test_invalid_yaml_syntax_raises_error(self, tmp_path):
         invalid_yaml = tmp_path / "invalid.yaml"
         invalid_yaml.write_text("key:\n  - item1\n  bad indent: value\n: invalid", encoding="utf-8")
 
-        engine = LuqiEngine(config_path=str(invalid_yaml))
-
-        assert isinstance(engine.config, EngineConfig)
+        with pytest.raises(Exception):
+            LuqiEngine(config_path=str(invalid_yaml))
 
 
 class TestConfigPropertyReadonly:

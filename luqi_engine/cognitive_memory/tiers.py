@@ -1,3 +1,5 @@
+"""记忆层级模块 - 定义记忆的层级结构"""
+
 from __future__ import annotations
 
 from collections import OrderedDict

@@ -1,3 +1,5 @@
+"""自动模式执行器 - 实现自动对话模式"""
+
 from __future__ import annotations
 
 import logging

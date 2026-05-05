@@ -1,3 +1,5 @@
+"""共享记忆模块 - 管理角色间的共享记忆"""
+
 from __future__ import annotations
 
 import json

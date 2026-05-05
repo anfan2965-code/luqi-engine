@@ -39,6 +39,11 @@
       show_root_heading: true
       show_root_toc_entry: true
 
+::: luqi_engine.core.constants
+    options:
+      show_root_heading: true
+      show_root_toc_entry: true
+
 ## 使用示例
 
 ### 配置加载

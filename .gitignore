@@ -42,3 +42,17 @@ Thumbs.db
 
 docs/_build/
 *.log
+
+# 敏感文件和配置文件
+.env
+.env.*
+config/*.yaml
+config/*.yml
+*.json  # 快照文件可能包含状态数据
+
+# 训练数据（可能包含敏感信息）
+training_data/
+
+# 日志文件
+logs/
+*.log.*

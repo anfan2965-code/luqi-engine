@@ -1,3 +1,5 @@
+"""叙事文档测试"""
+
 import pytest
 
 from luqi_engine.core.types import (

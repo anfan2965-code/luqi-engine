@@ -1,3 +1,5 @@
+"""适配器注册表 - 管理LLM适配器的注册和获取"""
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional, Type

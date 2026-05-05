@@ -1,3 +1,5 @@
+"""文本预处理器 - 预处理用户输入"""
+
 from __future__ import annotations
 
 import re

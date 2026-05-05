@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+_logger = logging.getLogger(__name__)
 
 from luqi_engine.core.types import EntityId, WorldState, ActionResult, generate_entity_id
 from luqi_engine.core.config import CharacterConfig

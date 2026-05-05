@@ -1,3 +1,5 @@
+"""认知记忆模块 - 管理单个角色的认知记忆"""
+
 from __future__ import annotations
 
 import json

@@ -5,9 +5,12 @@ LLM响应解析器 - 解析LLM输出为结构化数据
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+_logger = logging.getLogger(__name__)
 
 _FALLBACK_RESPONSE_TRUNCATION: int = 200
 _FALLBACK_CONFIDENCE_DEFAULT: float = 0.5

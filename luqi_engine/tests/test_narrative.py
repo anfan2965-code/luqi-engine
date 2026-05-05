@@ -1,3 +1,5 @@
+"""叙事控制器测试"""
+
 import asyncio
 import pytest
 from luqi_engine.narrative.controller import (

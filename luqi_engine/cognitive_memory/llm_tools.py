@@ -1,3 +1,5 @@
+"""LLM工具模块 - 提供LLM相关的工具函数"""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

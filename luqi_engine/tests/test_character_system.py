@@ -1,3 +1,5 @@
+"""角色系统测试"""
+
 import asyncio
 import math
 import time
@@ -482,7 +484,8 @@ class TestCEMPlanner:
         cem = CEMPlanner(utility_ai=ai, rng=PCGRandom(seed=42), temperature=1.0)
         for _ in range(10):
             cem.select()
-        assert cem.temperature != 1.0 or True
+        # 修复弱断言：验证温度发生了变化（适应机制）
+        assert cem.temperature != 1.0, "Temperature should have adapted after selections"
 
     def test_select_ranked(self):
         rng = PCGRandom(seed=42)

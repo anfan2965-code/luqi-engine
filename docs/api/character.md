@@ -165,11 +165,13 @@ for mem in memories:
 
 ### 记忆类型
 
-| 类型 | 说明 | 容量 | 保持时间 |
-|------|------|------|----------|
-| `short_term` | 短期记忆 | 100条 | 数小时~数天 |
-| `long_term` | 长期记忆 | 10000条 | 永久 |
-| `emotional` | 情绪记忆 | 500条 | 情感关联 |
+| 类型 | 枚举值 | 说明 | 容量 | 保持时间 |
+|------|--------|------|------|----------|
+| `MemoryType.SHORT_TERM` | `"short_term"` | 短期记忆 | 100条 | 数小时~数天 |
+| `MemoryType.LONG_TERM` | `"long_term"` | 长期记忆 | 10000条 | 永久 |
+| `MemoryType.EMOTIONAL` | `"emotional"` | 情绪记忆 | 500条 | 情感关联 |
+
+> **注意**: `memory_type` 参数应使用 `MemoryType` 枚举（如 `MemoryType.SHORT_TERM`），而非直接传入字符串字面量。`MemoryType` 为 `str, Enum` 类型，可直接与字符串比较。
 
 ## 行为一致性验证
 

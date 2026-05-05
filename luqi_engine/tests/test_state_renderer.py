@@ -1,3 +1,5 @@
+"""状态渲染器测试"""
+
 from __future__ import annotations
 
 import sys

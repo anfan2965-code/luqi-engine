@@ -1,3 +1,5 @@
+"""插件系统测试"""
+
 import pytest
 from luqi_engine.core.plugin import PluginBase, PluginManager, PluginRecord, PluginState
 

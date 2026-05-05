@@ -1,3 +1,5 @@
+"""记忆存储模块 - 实现多层记忆存储结构"""
+
 from __future__ import annotations
 
 import math

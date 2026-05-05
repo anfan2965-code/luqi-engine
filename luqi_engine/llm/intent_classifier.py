@@ -1,3 +1,5 @@
+"""意图分类器 - 实现三级意图路由"""
+
 from __future__ import annotations
 
 from enum import Enum

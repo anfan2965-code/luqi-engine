@@ -1,3 +1,5 @@
+"""对话智能体测试"""
+
 import asyncio
 import json
 import pytest

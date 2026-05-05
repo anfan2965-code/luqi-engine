@@ -1,3 +1,5 @@
+"""场景构建器测试"""
+
 import asyncio
 import pytest
 from luqi_engine.scene.builder import (

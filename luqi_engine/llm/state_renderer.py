@@ -1,3 +1,5 @@
+"""状态渲染器 - 渲染角色状态为系统提示词"""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

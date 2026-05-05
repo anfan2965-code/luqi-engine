@@ -1,3 +1,5 @@
+"""适配器注册表测试"""
+
 import pytest
 from luqi_engine.llm.adapter_registry import AdapterRegistry
 

@@ -1,3 +1,5 @@
+"""数据导出器 - 导出训练数据"""
+
 from __future__ import annotations
 
 import asyncio

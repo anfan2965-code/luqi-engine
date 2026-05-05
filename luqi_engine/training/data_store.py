@@ -208,6 +208,10 @@ class TrainingDataStore:
         return sorted(layers)
 
     def _build_sample_path(self, character_id: str, layer: int, sample_id: str) -> str:
+        # 防御性编程：验证ID格式，防止路径遍历攻击
+        self._validate_id(character_id, "character_id")
+        self._validate_id(sample_id, "sample_id")
+        
         dir_path = os.path.join(
             self._base_path, character_id, f"{_LAYER_DIR_PREFIX}{layer}"
         )
@@ -229,6 +233,20 @@ class TrainingDataStore:
             return self._dict_to_sample(data)
         except (json.JSONDecodeError, KeyError, TypeError):
             return None
+
+    def _validate_id(self, id_str: str, field_name: str) -> None:
+        """验证ID格式，只允许字母、数字、下划线、连字符，防止路径遍历攻击"""
+        import re
+        if not id_str:
+            raise ValueError(f"{field_name} cannot be empty")
+        if not re.match(r'^[a-zA-Z0-9_-]+$', id_str):
+            raise ValueError(
+                f"{field_name} contains invalid characters: '{id_str}'. "
+                f"Only alphanumeric characters, underscores, and hyphens are allowed."
+            )
+        # 防止路径遍历：检查是否包含 .. 或 .
+        if '..' in id_str or id_str.startswith('.'):
+            raise ValueError(f"{field_name} contains path traversal sequences: '{id_str}'")
 
     def _list_character_dirs(self) -> List[str]:
         if not os.path.isdir(self._base_path):

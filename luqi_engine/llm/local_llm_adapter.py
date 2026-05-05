@@ -1,5 +1,8 @@
+"""本地LLM适配器 - 支持GGUF和HuggingFace模型"""
+
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any, AsyncIterator, Dict, List, Optional
 from pathlib import Path
@@ -7,16 +10,20 @@ from pathlib import Path
 from luqi_engine.core.interfaces import ILLMBridge
 from luqi_engine.core.types import LLMRequest, LLMResponse, LLMStreamChunk, SDKType
 
+_logger = logging.getLogger(__name__)
+
 
 class LocalLLMAdapter(ILLMBridge):
     def __init__(self, model_path: str = "", n_gpu_layers: int = 0, n_ctx: int = 2048,
-                 max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9) -> None:
+                 max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9,
+                 trust_remote_code: bool = False) -> None:
         self._model_path = model_path
         self._n_gpu_layers = n_gpu_layers
         self._n_ctx = n_ctx
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
+        self._trust_remote_code = trust_remote_code
         self._model: Optional[Any] = None
         self._tokenizer: Optional[Any] = None
         self._hf_mode: bool = False
@@ -56,22 +63,27 @@ class LocalLLMAdapter(ILLMBridge):
         try:
             from transformers import AutoModelForCausalLM, AutoTokenizer
             import torch
-            print("[LocalLLMAdapter] Loading HuggingFace model from: {}".format(self._model_path))
+            _logger.info("Loading HuggingFace model from: %s", self._model_path)
+            # 安全检查：如果禁用trust_remote_code，记录警告
+            if not self._trust_remote_code:
+                _logger.warning("trust_remote_code is disabled. "
+                                "Some models may require this to be enabled.")
+            
             self._tokenizer = AutoTokenizer.from_pretrained(
-                self._model_path, trust_remote_code=True
+                self._model_path, trust_remote_code=self._trust_remote_code
             )
             if self._tokenizer.pad_token is None:
                 self._tokenizer.pad_token = self._tokenizer.eos_token
             self._model = AutoModelForCausalLM.from_pretrained(
                 self._model_path,
-                trust_remote_code=True,
+                trust_remote_code=self._trust_remote_code,
                 torch_dtype=torch.float16,
                 device_map="cpu",
             )
             self._model.eval()
             self._hf_mode = True
             self._loaded = True
-            print("[LocalLLMAdapter] HuggingFace model loaded successfully")
+            _logger.info("HuggingFace model loaded successfully")
         except ImportError as e:
             raise ImportError(
                 "transformers and torch are required for HuggingFace mode. "

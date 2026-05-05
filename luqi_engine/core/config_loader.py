@@ -46,8 +46,9 @@ def load_config(path: Optional[str] = None) -> EngineConfig:
     config_path = Path(path)
 
     if not config_path.exists():
-        logger.info(f"配置文件不存在: {path}，使用默认配置")
-        return EngineConfig()
+        error_msg = f"配置文件不存在: {path}"
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
 
     try:
         with open(config_path, 'r', encoding='utf-8') as f:

@@ -1,9 +1,14 @@
+"""氛围生成器 - 生成场景氛围描述"""
+
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from luqi_engine.core.rng import PCGRandom
 from luqi_engine.core.types import LLMRequest, SDKType
+
+_logger = logging.getLogger(__name__)
 
 _EVENT_HISTORY_MAX: int = 20
 _MIN_INTERVAL_ROUNDS: int = 5

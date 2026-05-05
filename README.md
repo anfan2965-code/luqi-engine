@@ -49,7 +49,7 @@ LuqiEngine (Facade 门面)
 - **场景构建器** — 天气系统 + 场景管理
 - **交互协调器** — 弹簧模型关系势能 + ContextFidelity语境保真度
 - **四级降级容错** — NORMAL → DEGRADED → SEVERE → OFFLINE，永不停止响应
-- **编排层委托** — ChatOrchestrator/EngineInitializer/CharacterExtractor，_USE_ORCHESTRATOR灰度开关
+- **模块化架构** — EngineCore/EngineChat/EngineWorld + ChatOrchestrator/EngineInitializer/CharacterExtractor
 
 ## 安装
 
@@ -201,4 +201,4 @@ python test_30round_fullchain.py
 
 ## 许可证
 
-[MIT License](LICENSE)
+[Apache License 2.0](LICENSE)

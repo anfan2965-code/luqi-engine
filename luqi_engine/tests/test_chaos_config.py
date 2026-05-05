@@ -1,3 +1,5 @@
+"""混沌配置测试"""
+
 import pytest
 from luqi_engine.core.config import ChaosConfig
 

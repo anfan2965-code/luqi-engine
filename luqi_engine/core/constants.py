@@ -241,3 +241,34 @@ OCEAN_HIGH_THRESHOLD = 65.0
 OCEAN_LOW_THRESHOLD = 35.0
 PAD_POSITIVE_THRESHOLD = 0.2
 PAD_NEGATIVE_THRESHOLD = -0.2
+
+# 输入验证常量
+_MAX_INPUT_LENGTH: int = 10000  # 字符数
+
+# 重复检测常量
+_REPETITION_MIN_TEXT_LENGTH: int = 8  # 文本最小长度才进行重复检测
+_REPETITION_SHORT_PATTERN_MIN: int = 2  # 短模式最小重复次数
+_REPETITION_SHORT_PATTERN_MAX: int = 8  # 短模式最大长度
+_REPETITION_MEDIUM_PATTERN_MIN: int = 2  # 中模式最小重复次数
+_REPETITION_MEDIUM_PATTERN_MAX: int = 10  # 中模式最大长度
+_REPETITION_LONG_PATTERN_MIN: int = 3  # 长模式最小长度
+_REPETITION_LONG_PATTERN_MAX: int = 15  # 长模式最大长度
+_REPETITION_CUTOFF_MIN: int = 6  # 截断位置最小值
+_REPETITION_NGRAM_SIZES: tuple = (6, 4)  # n-gram大小列表
+_REPETITION_NGRAM_GAP_MULTIPLIER: int = 3  # n-gram间隔乘数
+_REPETITION_NGRAM_POSITION_MULTIPLIER: int = 2  # n-gram位置乘数
+
+# 对话默认值
+_DEFAULT_MAX_ROUNDS: int = 20  # 多角色对话默认最大轮次
+_DEFAULT_AUTHORITY_RANK: int = 0  # 默认权限等级
+
+# 本地LLM输出要求
+_LOCAL_LLM_OUTPUT_REQUIREMENTS: str = "第一人称回复，保持角色风格，回复长度50-200字"
+
+# 快照文件格式
+_SNAPSHOT_FILE_PREFIX: str = "luqi_engine_snapshot_"
+_SNAPSHOT_FILE_EXTENSION: str = ".json"
+
+# 引擎版本
+_ENGINE_VERSION: str = "0.1.0"
+_ENGINE_NAME: str = "LuqiAI Engine"

@@ -1,3 +1,5 @@
+"""快照系统测试"""
+
 import json
 import os
 import tempfile

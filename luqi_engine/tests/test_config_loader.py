@@ -89,14 +89,11 @@ class TestLoadPartialYaml:
 
 
 class TestLoadNonexistentFile:
-    """测试3: 文件不存在时返回默认配置（不报错）"""
+    """测试3: 文件不存在时抛出异常"""
 
-    def test_load_nonexistent_returns_default(self):
-        config = load_config("/nonexistent/path/config.yaml")
-
-        assert isinstance(config, EngineConfig)
-        assert config.performance.target_fps == 30
-        assert config.llm.model in ("deepseek-chat", "qwen2-0.5b-lora-merged")
+    def test_load_nonexistent_raises_error(self):
+        with pytest.raises(FileNotFoundError):
+            load_config("/nonexistent/path/config.yaml")
 
     def test_load_none_returns_default(self):
         config = load_config(None)

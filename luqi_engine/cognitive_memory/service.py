@@ -1,3 +1,5 @@
+"""认知记忆服务 - 提供统一的记忆读写接口"""
+
 from __future__ import annotations
 
 import time

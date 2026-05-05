@@ -4,30 +4,35 @@ LuqiEngine 是鹿栖AI引擎的主入口类，整合所有子系统并提供统�
 
 ## 架构概述
 
-LuqiEngine 采用 **Facade + 委托编排** 模式：
+LuqiEngine 采用 **模块化继承 + 路由分发** 模式：
 
-- **LuqiEngine** 作为门面（Facade），对外暴露统一API
+- **LuqiEngine** 作为路由分发层，对外暴露统一API
+- **EngineCore** 负责初始化、配置、生命周期管理
+- **EngineChat** 负责对话功能、流式对话
+- **EngineWorld** 负责世界观、场景、角色创建
 - **ChatOrchestrator** 负责 `chat()` 的6阶段流水线编排
 - **EngineInitializer** 负责 `initialize()` 的7阶段初始化编排
 - **CharacterExtractor** 统一角色信息提取（OCEAN/PAD/状态）
-- **_USE_ORCHESTRATOR** 开关控制新旧路径切换，便于灰度发布
 
 ```
-LuqiEngine (Facade)
-  ├── ChatOrchestrator    ← chat() 委托
-  ├── EngineInitializer   ← initialize() 委托
-  └── CharacterExtractor  ← 角色信息提取委托
+LuqiEngine (路由分发层)
+  ├── EngineCore        ← 初始化、配置、生命周期
+  ├── EngineChat        ← 对话功能、流式对话
+  ├── EngineWorld       ← 世界观、场景、角色创建
+  ├── ChatOrchestrator  ← chat() 委托
+  ├── EngineInitializer ← initialize() 委托
+  └── CharacterExtractor← 角色信息提取委托
 ```
 
 ### 架构权衡记录
 
 | 决策 | 原因 | 风险 | 缓解 |
 |------|------|------|------|
-| chat()委托给ChatOrchestrator | 原210行10+职责，任何单阶段修改需理解全部代码 | 委托层增加间接调用开销 | _USE_ORCHESTRATOR开关可回退到原始逻辑 |
+| 模块化继承 | engine.py原1160行，职责过多 | 继承增加复杂度 | 清晰的模块边界和职责划分 |
+| chat()委托给ChatOrchestrator | 原210行10+职责，任何单阶段修改需理解全部代码 | 委托层增加间接调用开销 | 统一使用ChatOrchestrator，删除旧路径 |
 | initialize()委托给EngineInitializer | 原161行7+职责，快照恢复和常规路径有~40行重复代码 | 快照恢复需完整初始化所有子系统 | _reset_partial_init()确保回退干净 |
 | atmosphere_context只构建一次 | 原始代码构建两次(L533-543和L570-584)是BUG | 行为变更 | 修复后更正确，测试覆盖 |
 | CharacterExtractor统一提取 | _extract_personality等5方法在3处重复 | 委托增加一层调用 | 边界防御：所有方法对None/缺失属性安全降级 |
-| _engine_initializer在__init__创建 | initialize()需要_initializer在初始化前就存在 | 无显著风险 | 仅依赖logger，无重资源 |
 
 ## LuqiEngine 主类
 
@@ -35,6 +40,20 @@ LuqiEngine (Facade)
     options:
       show_root_heading: true
       show_root_toc_entry: true
+
+### 模块继承关系
+
+LuqiEngine 通过多重继承整合各功能模块：
+
+```python
+class LuqiEngine(EngineCore, EngineChat, EngineWorld):
+    # 路由分发层，统一对外API
+    pass
+```
+
+- **EngineCore**: 提供初始化、配置、生命周期管理
+- **EngineChat**: 提供对话功能、流式对话
+- **EngineWorld**: 提供世界观、场景、角色创建
 
 ## 核心方法
 
@@ -173,7 +192,7 @@ engine.event_bus             # EventBus 事件总线
 
 ### ChatOrchestrator
 
-四智能体协作数据流编排器，从LuqiEngine.chat()提取的6阶段流水线。
+四智能体协作数据流编排器，负责chat()的6阶段流水线编排。
 
 **6阶段流水线：**
 1. Phase 1: DialogueAgent → 生成CanonicalIR
@@ -187,11 +206,9 @@ engine.event_bus             # EventBus 事件总线
 |------|------|----------|----------|----------|
 | `orchestrate()` | 执行完整6阶段流水线 | dialogue_agent/llm_bridge非None | 返回含reply/latency_ms等字段的Dict | 各Phase内部异常被捕获降级 |
 
-**修复记录：** atmosphere_context原构建两次（L533-543和L570-584），现合并为一次。
-
 ### EngineInitializer
 
-引擎初始化编排器，从LuqiEngine.initialize()提取的7阶段初始化。
+引擎初始化编排器，负责initialize()的7阶段初始化。
 
 **7阶段初始化：**
 1. Seed Hierarchy → 种子层级和RNG管理器
@@ -205,8 +222,6 @@ engine.event_bus             # EventBus 事件总线
 | 方法 | 说明 | 前置条件 | 后置条件 | 可能异常 |
 |------|------|----------|----------|----------|
 | `initialize()` | 初始化引擎所有子系统 | engine._config已就绪 | engine所有子系统属性已设置 | 快照恢复失败时降级到常规初始化 |
-
-**修复记录：** 快照恢复路径原仅初始化seed/core/modules三层，导致LLM/agents全部为None。现补齐全部初始化步骤后再load_snapshot()。
 
 ### CharacterExtractor
 

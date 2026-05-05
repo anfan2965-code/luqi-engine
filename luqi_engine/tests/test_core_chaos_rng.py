@@ -1,3 +1,5 @@
+"""混沌随机数测试"""
+
 import math
 import pytest
 from luqi_engine.core.rng import PCGRandom, SeededRNGManager, NarrativeSeedHierarchy

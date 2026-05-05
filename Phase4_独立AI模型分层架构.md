@@ -1,5 +1,9 @@
 # Phase 4: 独立 AI 模型分层架构
 
+> **版本**: v1.0.0  
+> **更新日期**: 2026-05-05  
+> **状态**: 已实现
+
 ## 概述
 
 鹿栖引擎的 AI 模型架构采用**四智能体协作 + 三级路由 + 编排层委托**的设计：
@@ -54,7 +58,7 @@
     ▼
 [Phase 1] DialogueAgent.run(context)
     │  输入: user_input + character_state + narrative_context + world_guidance
-    │  输出: CanonicalIR {intent, confidence, emotion_delta, action, key_points, tone, length_hint}
+    │  输出: CanonicalIR {intent, confidence, emotion_delta, action, key_points, tone: ToneType, length_hint: LengthHint}
     │
     ▼
 [Phase 2] AlgorithmSupremeCourt.validate(canonical_ir)
@@ -65,8 +69,9 @@
     ▼
 [Phase 3] CriticAgent.run(validated_ir, context)
     │  ★ 本地LLM快速路径可跳过此阶段
-    │  输出: CriticVerdict {verdict, checks, overall_confidence, corrections}
-    │  verdict: ACCEPT / REVISE / REJECT
+    │  审查模式: CriticMode (FULL/LIGHT)
+    │  输出: CriticVerdict {verdict: CriticVerdictType, checks, overall_confidence, corrections}
+    │  verdict: ACCEPT / MINOR_FIX / MAJOR_REWRITE / REJECT / REVIEW
     │
     ▼
 [Phase 4a] NovelistAgent.run(validated_ir, critic_verdict, context)
@@ -89,9 +94,9 @@
     │    reply: str,              // 最终回复文本
     │    character_id: str,       // 角色ID
     │    narrative_version: int,  // 叙事文档版本号
-    │    atmosphere_mode: str,    // 氛围模式
-    │    critic_verdict: str,     // 审查结论
-    │    pace: str,               // 当前节奏
+    │    atmosphere_mode: AtmosphereMode,  // 氛围模式枚举 (LIGHT/FULL)
+    │    critic_verdict: CriticVerdictType,  // 审查结论枚举
+    │    pace: PaceLevel,              // 当前节奏枚举
     │    latency_ms: int,         // 响应延迟
     │  }
 ```
@@ -252,16 +257,21 @@ LuqiEngine 原本是一个**上帝类**（God Class）：
 
 **边界防御**：所有方法对 None/缺失属性安全降级，不会因角色对象缺少某属性而崩溃。
 
-### 4.3 灰度发布开关
+### 4.3 模块化架构
+
+LuqiEngine 采用模块化继承 + 路由分发模式：
 
 ```python
-_USE_ORCHESTRATOR: bool = True
+class LuqiEngine(EngineCore, EngineChat, EngineWorld):
+    # 路由分发层，统一对外API
+    pass
 ```
 
-- `True`: chat()/initialize() 委托给编排组件
-- `False`: 使用原始内联逻辑（回退路径）
+- **EngineCore**: 初始化、配置、生命周期管理
+- **EngineChat**: 对话功能、流式对话
+- **EngineWorld**: 世界观、场景、角色创建
 
-这允许在生产环境中逐步切换，一旦发现问题可以立即回退。
+这种架构将原本1160行的engine.py拆分为多个职责清晰的模块，提高了可维护性。
 
 ## 五、辅助系统
 
@@ -333,7 +343,7 @@ char_id = await engine.create_character({
 | 决策 | 原因 | 风险 | 缓解 |
 |------|------|------|------|
 | 四智能体串行而非并行 | 各阶段依赖前一阶段输出 | 延迟较高 | 本地LLM快速路径跳过Critic |
-| 编排层委托 | 降低LuqiEngine复杂度 | 增加一层间接调用 | _USE_ORCHESTRATOR开关回退 |
+| 模块化继承 | 降低LuqiEngine复杂度 | 继承增加复杂度 | 清晰的模块边界和职责划分 |
 | atmosphere_context单次构建 | 原代码构建两次是BUG | 行为变更 | 修复后更正确 |
 | CharacterExtractor统一提取 | 消除5处重复代码 | 委托增加调用 | 边界防御None安全降级 |
 | 快照恢复全7阶段初始化 | 原仅3层导致chat()不可用 | 恢复变慢 | 仅多几ms，换来正确性 |

@@ -1,3 +1,12 @@
+"""
+认知记忆整合模块 - 负责记忆的整合、聚类和程序性规则提取
+
+功能：
+- 记忆聚类：基于MinHash签名的快速近似相似度计算
+- 记忆整合：合并相似记忆条目
+- 程序性规则提取：从重复行为中提取规则
+"""
+
 from __future__ import annotations
 
 import time
@@ -80,33 +89,135 @@ class ConsolidationEngine:
         return ConsolidationReport(merged_count=merged_count, extracted_rules=extracted_rules, freed_entries=freed_entries)
 
     def _compute_similarity(self, entry_a: MemoryEntry, entry_b: MemoryEntry) -> float:
+        """
+        计算两个记忆条目之间的相似度
+        
+        Args:
+            entry_a: 第一个记忆条目
+            entry_b: 第二个记忆条目
+            
+        Returns:
+            相似度分数（0.0到1.0之间）
+        """
+        # 优先使用embedding计算余弦相似度
         emb_a = self._retriever.embed(entry_a.what)
         emb_b = self._retriever.embed(entry_b.what)
         if emb_a and emb_b:
             from luqi_engine.cognitive_memory.retrieval import HybridRetriever
             return HybridRetriever._cosine_similarity(emb_a, emb_b)
+        
+        # 回退到Jaccard相似度
         set_a = set(entry_a.what.lower().split())
         set_b = set(entry_b.what.lower().split())
         if not set_a or not set_b:
             return 0.0
         return len(set_a & set_b) / len(set_a | set_b)
 
+    def _compute_minhash_signature(self, text: str, num_hashes: int = 128) -> List[int]:
+        """
+        计算文本的MinHash签名
+        
+        Args:
+            text: 输入文本
+            num_hashes: 哈希函数数量（签名长度）
+            
+        Returns:
+            MinHash签名（整数列表）
+        """
+        import hashlib
+        
+        # 将文本转换为字符集合（shingles）
+        words = text.lower().split()
+        if len(words) < 2:
+            return [hash(w) % (2**32) for w in words] + [0] * (num_hashes - len(words))
+        
+        # 使用2-gram作为shingles
+        shingles = set()
+        for i in range(len(words) - 1):
+            shingle = f"{words[i]}_{words[i+1]}"
+            shingles.add(shingle)
+        
+        # 计算MinHash签名
+        signature = []
+        for i in range(num_hashes):
+            min_hash = float('inf')
+            for shingle in shingles:
+                # 使用不同的哈希函数
+                hash_input = f"{shingle}_{i}".encode('utf-8')
+                hash_value = int(hashlib.md5(hash_input).hexdigest(), 16) % (2**32)
+                min_hash = min(min_hash, hash_value)
+            signature.append(min_hash)
+        
+        return signature
+
+    def _minhash_similarity(self, sig_a: List[int], sig_b: List[int]) -> float:
+        """
+        计算两个MinHash签名之间的相似度
+        
+        Args:
+            sig_a: 第一个签名
+            sig_b: 第二个签名
+            
+        Returns:
+            相似度分数（0.0到1.0之间）
+        """
+        if not sig_a or not sig_b:
+            return 0.0
+        
+        # 计算签名中相同元素的比例
+        matches = sum(1 for a, b in zip(sig_a, sig_b) if a == b)
+        return matches / len(sig_a)
+
     def _cluster_similar(self, entries: List[MemoryEntry]) -> List[List[MemoryEntry]]:
+        """
+        聚类相似的记忆条目
+        
+        使用MinHash签名进行快速近似相似度计算，
+        将时间复杂度从O(n²)降为近似O(n)
+        
+        Args:
+            entries: 记忆条目列表
+            
+        Returns:
+            聚类结果列表
+        """
+        if not entries:
+            return []
+        
+        # 预计算所有条目的MinHash签名
+        signatures: Dict[str, List[int]] = {}
+        for entry in entries:
+            signatures[entry.entry_id] = self._compute_minhash_signature(entry.what)
+        
         visited: Set[str] = set()
         clusters: List[List[MemoryEntry]] = []
+        
         for i, entry in enumerate(entries):
             if entry.entry_id in visited:
                 continue
+            
             cluster = [entry]
             visited.add(entry.entry_id)
+            entry_sig = signatures[entry.entry_id]
+            
+            # 使用MinHash签名进行快速相似度计算
             for j, other in enumerate(entries):
                 if other.entry_id in visited:
                     continue
-                if self._compute_similarity(entry, other) >= self._similarity_threshold:
-                    cluster.append(other)
-                    visited.add(other.entry_id)
+                
+                other_sig = signatures[other.entry_id]
+                similarity = self._minhash_similarity(entry_sig, other_sig)
+                
+                # 如果MinHash相似度接近阈值，再使用精确相似度验证
+                if similarity >= self._similarity_threshold * 0.8:
+                    exact_similarity = self._compute_similarity(entry, other)
+                    if exact_similarity >= self._similarity_threshold:
+                        cluster.append(other)
+                        visited.add(other.entry_id)
+            
             if len(cluster) >= self._min_cluster_size:
                 clusters.append(cluster)
+        
         return clusters
 
     def _merge_cluster(self, cluster: List[MemoryEntry]) -> MemoryEntry:

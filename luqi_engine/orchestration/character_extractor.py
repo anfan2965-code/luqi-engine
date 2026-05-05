@@ -32,6 +32,15 @@ class CharacterExtractor:
     def __init__(self, state_renderer: Optional[StateRenderer] = None) -> None:
         self._state_renderer = state_renderer
 
+    def set_state_renderer(self, state_renderer: Optional[StateRenderer]) -> None:
+        """
+        设置状态渲染器
+        
+        Args:
+            state_renderer: 状态渲染器实例
+        """
+        self._state_renderer = state_renderer
+
     def extract_personality(self, character: Any) -> Dict[str, float]:
         """
         提取OCEAN性格分数

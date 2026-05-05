@@ -1,3 +1,5 @@
+"""意图配置测试"""
+
 import pytest
 from luqi_engine.llm.intent_config import IntentKeywordConfig
 from luqi_engine.llm.intent_classifier import IntentClassifier, IntentLevel

@@ -1,3 +1,5 @@
+"""知识图谱模块 - 管理实体和关系的图结构"""
+
 from __future__ import annotations
 
 import json

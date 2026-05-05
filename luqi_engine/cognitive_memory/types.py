@@ -1,3 +1,5 @@
+"""认知记忆类型定义 - 定义认知记忆相关的数据类型"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

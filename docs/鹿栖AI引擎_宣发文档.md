@@ -51,7 +51,7 @@
        ▼
 ┌─────────────────┐
 │  CriticAgent     │  对话质量审查 ★本地LLM快速路径可跳过
-│  (审查智能体)     │  输出: ACCEPT / REVISE / REJECT
+│  (审查智能体)     │  输出: ACCEPT / MINOR_FIX / MAJOR_REWRITE / REJECT / REVIEW
 └──────┬──────────┘
        ▼
 ┌────────────────┐     ┌─────────────────┐
@@ -153,7 +153,7 @@ PAD 情感空间 (愉悦度/激活度/支配度)
 | 厌 | -0.5 | +0.3 | +0.1 |
 | 欲 | +0.3 | +0.6 | +0.2 |
 
-**阻尼更新公式**：`新值 = 旧值 × 0.85 + 事件冲击 × scale`，模拟人类情绪惯性。
+**阻尼更新公式**：`新值 = clamp(旧值 × 0.85 + 事件冲击 × scale)`，结果钳制在[-1,+1]范围内，模拟人类情绪惯性。
 
 #### 3.5 四级降级容错
 
@@ -229,15 +229,18 @@ NORMAL ──3次失败──→ DEGRADED ──5次失败──→ SEVERELY_DEG
 
 自研 `DistributionToolkit`，不依赖 numpy/scipy，实现 5 种分布采样（正态/指数/帕累托/贝塔/三角），内置 Lanczos Gamma 近似和 Marsaglia-Tsang 采样算法。
 
-#### 4.4 编排层架构
+#### 4.4 模块化架构
 
-采用 Facade + Delegation 模式，通过 `_USE_ORCHESTRATOR` 开关控制灰度发布：
+采用模块化继承 + 路由分发模式：
 
-| 组件 | 提取自 | 行数减少 |
-|------|--------|----------|
-| ChatOrchestrator | chat() 210行 | ~150行 |
-| EngineInitializer | initialize() 161行 | ~120行 |
-| CharacterExtractor | 5个重复方法 | ~80行 |
+| 组件 | 职责 | 行数 |
+|------|------|------|
+| EngineCore | 初始化、配置、生命周期管理 | ~300行 |
+| EngineChat | 对话功能、流式对话 | ~400行 |
+| EngineWorld | 世界观、场景、角色创建 | ~150行 |
+| ChatOrchestrator | chat() 6阶段流水线编排 | ~500行 |
+| EngineInitializer | initialize() 7阶段初始化编排 | ~300行 |
+| CharacterExtractor | 角色信息统一提取 | ~150行 |
 
 #### 4.5 事件驱动架构
 

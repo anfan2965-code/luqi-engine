@@ -202,8 +202,8 @@
   action: "smile_nod",           // 必须在GOAP可用行动集合内
   action_params: {"target": "user"},
   key_points: ["确认天气好", "表达想出去", "询问对方计划"],
-  tone: "casual",
-  length_hint: "medium",
+  tone: ToneType.CASUAL,          // ToneType枚举 (NEUTRAL/CASUAL/FORMAL/PLAYFUL/SERIOUS/EMPATHETIC)
+  length_hint: LengthHint.MEDIUM,  // LengthHint枚举 (TINY/SHORT/MEDIUM/LONG)
   narrative_signal: null,        // 不主动推动剧情 (留给Novel)
   memory_to_add: null
 }
@@ -310,21 +310,20 @@
   checks: [
     {
       dimension: "ooc_detection",
-      severity: "pass",
+      severity: CriticSeverity.PASS,  // CriticSeverity枚举 (PASS/WARNING/CRITICAL)
       score: 0.92,           // 0-1, 越高越符合人设
       detail: "回复符合小雪温柔谨慎的性格"
     },
     {
       dimension: "narrative_coherence",
-      severity: "warning",
+      severity: CriticSeverity.WARNING,  // CriticSeverity枚举
       score: 0.75,
       detail: "回复较为被动，可能导致剧情停滞;
                建议增加一点主动性"
     },
     {
       dimension: "fact_consistency",
-      severity: "pass",
-      score: 1.0,
+      severity: CriticSeverity.PASS,
       detail: "无事实矛盾"
     },
     {
@@ -399,7 +398,7 @@
 
 输出格式: AtmosphereOutput (JSON)
 {
-  mode: "light",              // light / full
+  mode: AtmosphereMode.LIGHT,   // AtmosphereMode枚举 (LIGHT/FULL)
   
   // === 环境层 ===
   environment: {
@@ -427,10 +426,10 @@
   
   // === 基调层 ===
   mood_declaration: {
-    dominant_emotion: "tension",   // tension/warmth/mystery/sorrow/joy
+    dominant_emotion: ToneType.SERIOUS,  // ToneType枚举 (NEUTRAL/CASUAL/FORMAL/PLAYFUL/SERIOUS/EMPATHETIC)
     intensity: 0.78,               // 0-1
     color_palette: ["#0a0a1a", "#1a2a4a", "#c4a484"],  # 暗蓝+冷金
-    pacing_hint: "slow_breath"    // 影响VoiceRenderer的排版节奏
+    pacing_hint: PaceLevel.SLOW_BREATH  // PaceLevel枚举 (SLOW_BREATH/NORMAL/URGENT/CLIMACTIC)
   },
   
   // === 控制字段 ===

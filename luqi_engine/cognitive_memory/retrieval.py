@@ -1,3 +1,5 @@
+"""记忆检索模块 - 实现BM25+向量+图的混合检索"""
+
 from __future__ import annotations
 
 import math
