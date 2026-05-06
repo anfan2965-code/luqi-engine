@@ -1,5 +1,3 @@
-"""意图分类器测试"""
-
 from __future__ import annotations
 
 import asyncio

@@ -1,5 +1,3 @@
-"""语音渲染器测试"""
-
 from typing import Any, Dict, Optional
 
 import pytest

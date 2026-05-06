@@ -1,5 +1,3 @@
-"""分词器 - 中文分词实现"""
-
 from __future__ import annotations
 
 import unicodedata

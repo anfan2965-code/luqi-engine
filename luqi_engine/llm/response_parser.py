@@ -10,10 +10,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-_logger = logging.getLogger(__name__)
-
 _FALLBACK_RESPONSE_TRUNCATION: int = 200
 _FALLBACK_CONFIDENCE_DEFAULT: float = 0.5
+
+_logger = logging.getLogger(__name__)
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -23,6 +23,21 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         s = str(value).strip().rstrip('%')
         return float(s) if s else default
     except (ValueError, TypeError):
+        return default
+
+
+def _safe_enum(value: Any, enum_class: type, default: Any = None) -> Any:
+    if isinstance(value, enum_class):
+        return value
+    if default is None:
+        default = list(enum_class)[-1]
+    try:
+        if isinstance(value, str):
+            for member in enum_class:
+                if member.value == value:
+                    return member
+        return default
+    except Exception:
         return default
 
 from luqi_engine.core.types import (
@@ -311,8 +326,8 @@ class ResponseParser:
             action=str(data.get("action", "")),
             action_params=dict(data.get("action_params", {})),
             key_points=list(data.get("key_points", [])),
-            tone=str(data.get("tone", ToneType.NEUTRAL)),
-            length_hint=str(data.get("length_hint", LengthHint.MEDIUM)),
+            tone=_safe_enum(data.get("tone", ToneType.NEUTRAL), ToneType, ToneType.NEUTRAL),
+            length_hint=_safe_enum(data.get("length_hint", LengthHint.MEDIUM), LengthHint, LengthHint.MEDIUM),
             narrative_signal=data.get("narrative_signal"),
             memory_to_add=data.get("memory_to_add"),
         )
@@ -365,7 +380,7 @@ class ResponseParser:
                 narrative_tension=_safe_float(
                     prediction_data.get("narrative_tension", 0.0)
                 ),
-                suggested_pace=str(prediction_data.get("suggested_pace", PaceLevel.NORMAL)),
+                suggested_pace=_safe_enum(prediction_data.get("suggested_pace", PaceLevel.NORMAL), PaceLevel, PaceLevel.NORMAL),
             )
 
         return NarrativeDelta(
@@ -389,7 +404,7 @@ class ResponseParser:
         checks = [
             CriticCheck(
                 dimension=str(c.get("dimension", "")),
-                severity=str(c.get("severity", CriticSeverity.PASS)),
+                severity=_safe_enum(c.get("severity", CriticSeverity.PASS), CriticSeverity, CriticSeverity.PASS),
                 score=_safe_float(c.get("score", 1.0)),
                 detail=str(c.get("detail", "")),
             )
@@ -419,7 +434,7 @@ class ResponseParser:
             )
 
         return CriticVerdict(
-            verdict=str(data.get("verdict", CriticVerdictType.ACCEPT)),
+            verdict=_safe_enum(data.get("verdict", CriticVerdictType.ACCEPT), CriticVerdictType, CriticVerdictType.ACCEPT),
             checks=checks,
             overall_confidence=_safe_float(data.get("overall_confidence", 1.0)),
             corrections=corrections,
@@ -461,14 +476,14 @@ class ResponseParser:
 
         mood_data = data.get("mood_declaration", {})
         mood = MoodDeclaration(
-            dominant_emotion=str(mood_data.get("dominant_emotion", ToneType.NEUTRAL)),
+            dominant_emotion=_safe_enum(mood_data.get("dominant_emotion", ToneType.NEUTRAL), ToneType, ToneType.NEUTRAL),
             intensity=_safe_float(mood_data.get("intensity", _DEFAULT_MOOD_INTENSITY)),
             color_palette=list(mood_data.get("color_palette", [])),
-            pacing_hint=str(mood_data.get("pacing_hint", PaceLevel.NORMAL)),
+            pacing_hint=_safe_enum(mood_data.get("pacing_hint", PaceLevel.NORMAL), PaceLevel, PaceLevel.NORMAL),
         )
 
         return AtmosphereOutput(
-            mode=str(data.get("mode", AtmosphereMode.LIGHT)),
+            mode=_safe_enum(data.get("mode", AtmosphereMode.LIGHT), AtmosphereMode, AtmosphereMode.LIGHT),
             environment=environment,
             narration=narration,
             stage_directions=stage_directions,

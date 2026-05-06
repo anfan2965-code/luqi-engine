@@ -6,7 +6,6 @@ GOAP规划器 - 基于目标导向行动规划的A*搜索
 from __future__ import annotations
 
 import heapq
-import math
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, FrozenSet, List, Optional, Set, Tuple
 
@@ -155,6 +154,11 @@ class GOAPPlanner:
         self._actions: List[GOAPAction] = list(actions) if actions is not None else []
         self._counter: int = _ASTAR_COUNTER_INIT
 
+    @property
+    def actions(self) -> List[GOAPAction]:
+        """获取当前可用的动作列表 (只读副本)"""
+        return list(self._actions)
+
     def add_action(self, action: GOAPAction) -> None:
         self._actions.append(action)
 
@@ -243,18 +247,17 @@ class GOAPGoalSelector:
         """根据PAD/OCEAN状态选择GOAP目标世界状态"""
         p = pad_state.get("pleasure", 0.0)
         a = pad_state.get("arousal", 0.0)
-        d = pad_state.get("dominance", 0.0)
 
         if p < _GOAP_PLEASURE_THREAT_THRESHOLD:
-            return GOAPWorldState(data={"threat_avoided": True, "situation_assessed": True})
+            return _GOAP_DEFAULT_GOALS["safety"]
         if a > _GOAP_AROUSAL_SOCIAL_HIGH_THRESHOLD and p > _GOAP_PLEASURE_SOCIAL_POSITIVE_THRESHOLD:
-            return GOAPWorldState(data={"conversation_started": True, "is_alone": False})
+            return _GOAP_DEFAULT_GOALS["social"]
         if a > _GOAP_AROUSAL_SOCIAL_NEGATIVE_THRESHOLD and p < _GOAP_PLEASURE_NEGATIVE_NEUTRAL:
-            return GOAPWorldState(data={"conversation_started": True, "is_alone": False})
+            return _GOAP_DEFAULT_GOALS["social"]
         if p > _GOAP_PLEASURE_GROWTH_THRESHOLD:
-            return GOAPWorldState(data={"situation_assessed": True, "memory_reflected": True})
+            return _GOAP_DEFAULT_GOALS["growth"]
         if ocean_state is not None and ocean_state.get("openness", _GOAP_OCEAN_SCORE_DEFAULT) > _GOAP_OCEAN_OPENNESS_REFLECTIVE_THRESHOLD:
-            return GOAPWorldState(data={"memory_reflected": True, "has_memory": True})
+            return _GOAP_DEFAULT_GOALS["reflection"]
         if ocean_state is not None and ocean_state.get("extraversion", _GOAP_OCEAN_SCORE_DEFAULT) > _GOAP_OCEAN_EXTRAVERSION_SOCIAL_THRESHOLD:
-            return GOAPWorldState(data={"conversation_started": True, "is_alone": False})
-        return GOAPWorldState(data={"situation_assessed": True, "is_alone": False})
+            return _GOAP_DEFAULT_GOALS["social"]
+        return _GOAP_DEFAULT_GOALS["comfort"]

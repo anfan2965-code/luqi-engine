@@ -1,5 +1,3 @@
-"""间隙预计算器 - 利用用户阅读时间预计算"""
-
 from __future__ import annotations
 
 import asyncio

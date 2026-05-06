@@ -1,5 +1,3 @@
-"""多角色记忆测试"""
-
 import asyncio
 import time
 import pytest

@@ -179,6 +179,11 @@ class UtilityBasedAI:
             for behavior in DefaultBehaviors.create_all():
                 self.add_behavior(behavior)
 
+    @property
+    def behaviors(self) -> List[BehaviorOption]:
+        """获取当前可用的行为选项列表 (只读副本)"""
+        return list(self._behaviors)
+
     def add_behavior(self, behavior: BehaviorOption) -> None:
         self._behaviors.append(behavior)
 

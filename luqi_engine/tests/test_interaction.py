@@ -1,5 +1,3 @@
-"""交互协调器测试"""
-
 import asyncio
 import pytest
 from luqi_engine.interaction.coordinator import (

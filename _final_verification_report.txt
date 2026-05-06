@@ -1,0 +1,397 @@
+
+================================================================================
+详细验证报告
+================================================================================
+
+────────────────────────────────────────────────────────────
+📄 AGENTS.md [WARN]
+   总符号: 6, 匹配: 4
+
+   ⚠️  文档中记录但代码中未找到 (2项):
+      - __init__ (function) L27
+      - _build_fallback_ir (method) L36
+
+────────────────────────────────────────────────────────────
+📄 character.md [FAIL]
+   总符号: 33, 匹配: 12
+
+   ⚠️  文档中记录但代码中未找到 (21项):
+      - __init__ (function) L36
+      - get_all_scores (method) L47
+      - to_prompt_context (method) L48
+      - PADEmotionSpace (class) L62
+      - to_prompt_context (method) L76
+      - copy (method) L77
+      - EMOTION_DESIRE_MAP (constant) L96
+      - __init__ (method) L98
+      - get_desire_vector (method) L101
+      - to_motivation_input (method) L102
+      ... 还有 11 项
+
+   🔧 签名不匹配 (6项):
+      - get_score: 文档参数=['self', 'dimension: str'] vs 代码参数=['self', 'dimension']
+      - set_score: 文档参数=['self', 'dimension: str', 'value: float'] vs 代码参数=['self', 'dimension', 'value']
+      - apply_delta: 文档参数=['self', 'delta: EmotionDelta'] vs 代码参数=['self', 'intimacy_delta', 'trust_delta', 'respect_delta', 'fear_delta']
+      - update_from_emotion: 文档参数=['self', 'emotion_name: str', 'intensity: float'] vs 代码参数=['self', 'emotion_name', 'intensity']
+      - get_dominant_desire: 文档参数=['self'] vs 代码参数=['self', 'character_id']
+
+   📝 未文档化的公共类 (56项):
+      - Motive @ character\character_entity.py:41
+      - MotivationEngine @ character\character_entity.py:51
+      - NPCFactory @ character\character_manager.py:89
+      - CharacterManager @ character\character_manager.py:126
+      - PsychologicalTensionLevel @ character\deep_character.py:55
+      - ShadowActivationState @ character\deep_character.py:63
+      - NarrativeArcPhase @ character\deep_character.py:71
+      - MotivationDominance @ character\deep_character.py:80
+
+────────────────────────────────────────────────────────────
+📄 config.md [WARN]
+   总符号: 4, 匹配: 3
+
+   ⚠️  文档中记录但代码中未找到 (1项):
+      - validate (method) L42
+
+   🔧 签名不匹配 (1项):
+      - from_dict: 文档参数=['cls', 'data: Dict[str', 'Any]'] vs 代码参数=['cls', 'data']
+
+   📝 未文档化的公共类 (146项):
+      - LorenzAttractor @ core\chaos.py:92
+      - EmotionalFluctuation @ core\chaos.py:168
+      - ConfigMixin @ core\config.py:43
+      - PerformanceConfig @ core\config.py:67
+      - WorldViewConfig @ core\config.py:79
+      - SceneConfig @ core\config.py:89
+      - CharacterConfig @ core\config.py:98
+      - NarrativeConfig @ core\config.py:117
+
+────────────────────────────────────────────────────────────
+📄 core.md [FAIL]
+   总符号: 56, 匹配: 33
+
+   ⚠️  文档中记录但代码中未找到 (23项):
+      - EntityId (class) L29
+      - __init__ (method) L36
+      - value (method) L38
+      - __hash__ (method) L39
+      - __eq__ (method) L40
+      - __str__ (method) L41
+      - __init__ (method) L126
+      - judge (function) L128
+      - AlgorithmicRNG (class) L174
+      - __init__ (method) L184
+      ... 还有 13 项
+
+   🔧 签名不匹配 (6项):
+      - subscribe: 文档参数=['self', 'topic: str', 'handler: Callable', 'priority: int = 0'] vs 代码参数=['self', 'event_type', 'handler', 'is_async']
+      - unsubscribe: 文档参数=['self', 'subscription_id: str'] vs 代码参数=['self', 'event_type', 'handler', 'is_async']
+      - publish: 文档参数=['self', 'topic: str', 'data: Any'] vs 代码参数=['self', 'event']
+      - get_history: 文档参数=['self', 'topic: str', 'limit: int = 50'] vs 代码参数=['self', 'event_type', 'limit', 'since']
+      - uniform: 文档参数=['self', 'low: float', 'high: float'] vs 代码参数=['self', 'low', 'high']
+
+   📝 未文档化的公共类 (133项):
+      - LorenzAttractor @ core\chaos.py:92
+      - EmotionalFluctuation @ core\chaos.py:168
+      - ConfigMixin @ core\config.py:43
+      - PerformanceConfig @ core\config.py:67
+      - WorldViewConfig @ core\config.py:79
+      - SceneConfig @ core\config.py:89
+      - CharacterConfig @ core\config.py:98
+      - NarrativeConfig @ core\config.py:117
+
+────────────────────────────────────────────────────────────
+📄 engine.md [WARN]
+   总符号: 2, 匹配: 1
+
+   ⚠️  文档中记录但代码中未找到 (1项):
+      - __init__ (method) L36
+
+────────────────────────────────────────────────────────────
+📄 game_theory.md [FAIL]
+   总符号: 59, 匹配: 33
+
+   ⚠️  文档中记录但代码中未找到 (26项):
+      - mean (method) L48
+      - variance (method) L52
+      - DIRECT (constant) L76
+      - REPORTED (constant) L77
+      - INFERRED (constant) L78
+      - PHYSICAL (constant) L91
+      - REPUTATION (constant) L92
+      - RESOURCE (constant) L93
+      - SOCIAL (constant) L94
+      - BINDING (constant) L169
+      ... 还有 16 项
+
+   🔧 签名不匹配 (1项):
+      - get_belief: 文档参数=['self', 'target_id: EntityId', 'dimension: BeliefDimension'] vs 代码参数=['self', 'target_id', 'dimension']
+
+   📝 未文档化的公共类 (1项):
+      - ThreatCredibilityConfig @ game_theory\types.py:444
+
+────────────────────────────────────────────────────────────
+📄 interaction.md [WARN]
+   总符号: 12, 匹配: 7
+
+   ⚠️  文档中记录但代码中未找到 (5项):
+      - __init__ (method) L29
+      - get_relationship (method) L38
+      - __init__ (method) L63
+      - select_speaker (function) L65
+      - __init__ (method) L90
+
+   🔧 签名不匹配 (2项):
+      - arrive: 文档参数=['self', 'round_num: int'] vs 代码参数=['self', 'round_num']
+      - depart: 文档参数=['self', 'round_num: int'] vs 代码参数=['self', 'round_num']
+
+   📝 未文档化的公共类 (6项):
+      - SocialRuleType @ interaction\coordinator.py:71
+      - RelationshipEdge @ interaction\coordinator.py:79
+      - SocialRule @ interaction\coordinator.py:95
+      - DialogueTurn @ interaction\coordinator.py:107
+      - RelationshipGraph @ interaction\coordinator.py:116
+      - SocialRulesEngine @ interaction\coordinator.py:196
+
+────────────────────────────────────────────────────────────
+📄 llm.md [FAIL]
+   总符号: 25, 匹配: 15
+
+   ⚠️  文档中记录但代码中未找到 (10项):
+      - __init__ (method) L38
+      - register_adapter (method) L46
+      - get_current_level (method) L47
+      - DeepSeekAdapter (class) L61
+      - extract_reasoning (method) L96
+      - correct_output (method) L99
+      - __init__ (method) L120
+      - record_success (method) L125
+      - record_failure (method) L128
+      - set_degradation_level (method) L131
+
+   🔧 签名不匹配 (2项):
+      - classify: 文档参数=['self', 'text: str'] vs 代码参数=['self', 'user_input', 'num_characters']
+      - parse: 文档参数=['self', 'raw_response: str', 'request: LLMRequest'] vs 代码参数=['self', 'response', 'sdk_type']
+
+   📝 未文档化的公共类 (19项):
+      - AdapterRegistry @ llm\adapter_registry.py:10
+      - CompressionResult @ llm\deepseek_optimizer.py:38
+      - DialogueMode @ llm\dialogue_modes.py:26
+      - MultiCharacterConfig @ llm\dialogue_modes.py:32
+      - SingleCharacterConfig @ llm\dialogue_modes.py:48
+      - TurnAllocation @ llm\dialogue_modes.py:57
+      - DialogueModes @ llm\dialogue_modes.py:68
+      - DegradationLevel @ llm\fallback.py:24
+
+────────────────────────────────────────────────────────────
+📄 local_model.md [WARN]
+   总符号: 20, 匹配: 15
+
+   ⚠️  文档中记录但代码中未找到 (5项):
+      - __init__ (function) L37
+      - get_pipeline_stats (method) L46
+      - __init__ (method) L71
+      - WARNING (constant) L122
+      - BLOCKED (constant) L124
+
+   📝 未文档化的公共类 (4项):
+      - UnsafeCategory @ local_model\safety_checker.py:24
+      - SimilarityResult @ local_model\semantic_vectorizer.py:47
+      - RepetitionMatch @ local_model\semantic_vectorizer.py:56
+      - ConsistencyReport @ local_model\semantic_vectorizer.py:64
+
+────────────────────────────────────────────────────────────
+📄 memory.md [FAIL]
+   总符号: 20, 匹配: 13
+
+   ⚠️  文档中记录但代码中未找到 (7项):
+      - I (constant) L38
+      - MAX_MEMORIES (constant) L45
+      - AUTO_CLEANUP_THRESHOLD (constant) L46
+      - __init__ (method) L48
+      - get_memory_count (method) L70
+      - get_stats (method) L71
+      - calculate (function) L116
+
+   🔧 签名不匹配 (1项):
+      - decay: 文档参数=['self', 'current_time: Optional[float] = None'] vs 代码参数=['self', 'force']
+
+────────────────────────────────────────────────────────────
+📄 motivation.md [FAIL]
+   总符号: 32, 匹配: 25
+
+   ⚠️  文档中记录但代码中未找到 (7项):
+      - __init__ (method) L47
+      - update_deficit (method) L49
+      - get_prioritized_needs (function) L52
+      - apply_context (method) L66
+      - get_motivation_profile (method) L69
+      - TRANSCENDENT (constant) L83
+      - to_prompt_context (method) L122
+
+────────────────────────────────────────────────────────────
+📄 narrative.md [WARN]
+   总符号: 21, 匹配: 17
+
+   ⚠️  文档中记录但代码中未找到 (4项):
+      - __init__ (function) L158
+      - get_branch_tree (method) L208
+      - compute_atmosphere (method) L244
+      - get_atmosphere_prompt_text (method) L246
+
+   📝 未文档化的公共类 (1项):
+      - NarrativeDocument @ narrative\document.py:33
+
+────────────────────────────────────────────────────────────
+📄 orchestration.md [FAIL]
+   总符号: 11, 匹配: 3
+
+   ⚠️  文档中记录但代码中未找到 (8项):
+      - __init__ (method) L40
+      - health_check (method) L45
+      - __init__ (method) L73
+      - set_degradation_level (method) L78
+      - get_pipeline_metrics (method) L79
+      - __init__ (method) L103
+      - extract_from_yaml (method) L105
+      - extract_single (function) L108
+
+────────────────────────────────────────────────────────────
+📄 performance.md [FAIL]
+   总符号: 17, 匹配: 6
+
+   ⚠️  文档中记录但代码中未找到 (11项):
+      - __init__ (function) L45
+      - get_stats (method) L60
+      - clear (method) L65
+      - __init__ (method) L99
+      - get_memory_usage (method) L101
+      - get_fd_count (method) L102
+      - check_limits (method) L103
+      - register_gc_callback (method) L104
+      - BenchmarkRunner (class) L110
+      - run_benchmark (function) L124
+      ... 还有 1 项
+
+   🔧 签名不匹配 (2项):
+      - acquire: 文档参数=['self'] vs 代码参数=['self', 'pool_name']
+      - release: 文档参数=['self', 'obj: T'] vs 代码参数=['self', 'pool_name', 'obj']
+
+   📝 未文档化的公共类 (11项):
+      - BenchmarkResult @ performance\benchmark.py:47
+      - BeliefSystemBenchmark @ performance\benchmark.py:114
+      - ThreatCredibilityBenchmark @ performance\benchmark.py:173
+      - MixedStrategyBenchmark @ performance\benchmark.py:229
+      - MechanismDesignBenchmark @ performance\benchmark.py:275
+      - IntegrationBenchmark @ performance\benchmark.py:312
+      - RendererBenchmark @ performance\benchmark.py:369
+      - PoolManager @ performance\pool.py:180
+
+────────────────────────────────────────────────────────────
+📄 scene.md [FAIL]
+   总符号: 60, 匹配: 52
+
+   ⚠️  文档中记录但代码中未找到 (8项):
+      - RANGE_MIN (constant) L116
+      - RANGE_MAX (constant) L117
+      - __init__ (method) L162
+      - update (method) L164
+      - get_effects (method) L167
+      - detect (method) L199
+      - ConflictReport (class) L206
+      - __init__ (method) L234
+
+   🔧 签名不匹配 (6项):
+      - set: 文档参数=['self', 'attribute: AmbientAttribute', 'value: float'] vs 代码参数=['self', 'attribute', 'value']
+      - get: 文档参数=['self', 'attribute: AmbientAttribute', 'default: float = 0.5'] vs 代码参数=['self', 'attribute', 'default']
+      - get_environment: 文档参数=['self', 'scene_id: EntityId'] vs 代码参数=['self', 'scene_id']
+      - get_element: 文档参数=['self', 'scene_id: EntityId', 'element_id: EntityId'] vs 代码参数=['self', 'scene_id', 'element_id']
+      - remove_element: 文档参数=['self', 'scene_id: EntityId', 'element_id: EntityId'] vs 代码参数=['self', 'scene_id', 'element_id']
+
+   📝 未文档化的公共类 (7项):
+      - EntityRole @ scene\awareness_types.py:79
+      - ObjectCategory @ scene\awareness_types.py:86
+      - SceneEventType @ scene\awareness_types.py:107
+      - ObjectState @ scene\awareness_types.py:169
+      - SceneEvent @ scene\awareness_types.py:186
+      - SpatialRelation @ scene\awareness_types.py:217
+      - SceneContext @ scene\awareness_types.py:238
+
+────────────────────────────────────────────────────────────
+📄 scheduler.md [FAIL]
+   总符号: 24, 匹配: 14
+
+   ⚠️  文档中记录但代码中未找到 (10项):
+      - __init__ (method) L40
+      - force_idle (method) L49
+      - __init__ (function) L85
+      - set_auto_interval (method) L94
+      - is_auto_eligible (method) L95
+      - compute_gap (function) L110
+      - get_adjusted_gap (method) L118
+      - record_interaction (method) L138
+      - get_pace_level (method) L140
+      - get_recommendation (method) L142
+
+   📝 未文档化的公共类 (2项):
+      - TickResult @ scheduler\auto_mode.py:31
+      - GapTaskResult @ scheduler\gap_precomputer.py:35
+
+────────────────────────────────────────────────────────────
+📄 training.md [FAIL]
+   总符号: 18, 匹配: 11
+
+   ⚠️  文档中记录但代码中未找到 (7项):
+      - __init__ (method) L59
+      - _calculate_quality (method) L72
+      - _assign_usage_tags (method) L75
+      - _CORRECTION_SEVERITY_WEIGHTS (constant) L82
+      - __init__ (method) L127
+      - export_character_data (function) L142
+      - __init__ (method) L194
+
+   🔧 签名不匹配 (2项):
+      - store: 文档参数=['self', 'sample: TrainingSample'] vs 代码参数=['self', 'sample']
+      - get_stats: 文档参数=['self', 'character_id: Optional[str] = None'] vs 代码参数=['self', 'character_id']
+
+────────────────────────────────────────────────────────────
+📄 voice.md [WARN]
+   总符号: 8, 匹配: 3
+
+   ⚠️  文档中记录但代码中未找到 (5项):
+      - __init__ (method) L32
+      - set_style_override (method) L42
+      - __init__ (method) L73
+      - assemble (function) L75
+      - apply_template (method) L82
+
+────────────────────────────────────────────────────────────
+📄 worldview.md [WARN]
+   总符号: 3, 匹配: 1
+
+   ⚠️  文档中记录但代码中未找到 (2项):
+      - __init__ (method) L45
+      - ConflictReport (class) L103
+
+⚠️  所有警告 (192项):
+   • [AGENTS.md] 文档中记录但代码中未找到: __init__ (function)
+   • [AGENTS.md] 文档中记录但代码中未找到: _build_fallback_ir (method)
+   • [character.md] 文档中记录但代码中未找到: __init__ (function)
+   • [character.md] get_score 参数不匹配: 文档=['self', 'dimension: str'] vs 代码=['self', 'dimension']
+   • [character.md] set_score 参数不匹配: 文档=['self', 'dimension: str', 'value: float'] vs 代码=['self', 'dimension', 'value']
+   • [character.md] 文档中记录但代码中未找到: get_all_scores (method)
+   • [character.md] 文档中记录但代码中未找到: to_prompt_context (method)
+   • [character.md] 文档中记录但代码中未找到: PADEmotionSpace (class)
+   • [character.md] apply_delta 参数不匹配: 文档=['self', 'delta: EmotionDelta'] vs 代码=['self', 'intimacy_delta', 'trust_delta', 'respect_delta', 'fear_delta']
+   • [character.md] 文档中记录但代码中未找到: to_prompt_context (method)
+   • [character.md] 文档中记录但代码中未找到: copy (method)
+   • [character.md] 文档中记录但代码中未找到: EMOTION_DESIRE_MAP (constant)
+   • [character.md] 文档中记录但代码中未找到: __init__ (method)
+   • [character.md] update_from_emotion 参数不匹配: 文档=['self', 'emotion_name: str', 'intensity: float'] vs 代码=['self', 'emotion_name', 'intensity']
+   • [character.md] get_dominant_desire 参数不匹配: 文档=['self'] vs 代码=['self', 'character_id']
+   • [character.md] 文档中记录但代码中未找到: get_desire_vector (method)
+   • [character.md] 文档中记录但代码中未找到: to_motivation_input (method)
+   • [character.md] 文档中记录但代码中未找到: __init__ (method)
+   • [character.md] 文档中记录但代码中未找到: register_action (method)
+   • [character.md] 文档中记录但代码中未找到: get_current_plan (method)
+
+================================================================================

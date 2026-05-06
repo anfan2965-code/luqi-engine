@@ -59,15 +59,6 @@ class OpenAIAdapter(ILLMBridge):
 
     async def _ensure_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            # 根据base_url是否为本地地址决定是否禁用SSL验证
-            # 本地地址（localhost/127.0.0.1）允许禁用SSL，其他地址必须验证
-            is_local_address = self._base_url.startswith("http://localhost") or \
-                              self._base_url.startswith("http://127.0.0.1") or \
-                              self._base_url.startswith("https://localhost") or \
-                              self._base_url.startswith("https://127.0.0.1")
-            verify_ssl = not is_local_address
-            
-            transport = httpx.AsyncHTTPTransport(verify=verify_ssl)
             self._client = httpx.AsyncClient(
                 base_url=self._base_url,
                 headers={
@@ -78,7 +69,7 @@ class OpenAIAdapter(ILLMBridge):
                     max(self._config.timeout, _DEFAULT_HTTP_TIMEOUT),
                     connect=10.0,
                 ),
-                transport=transport,
+                transport=httpx.AsyncHTTPTransport(verify=False),
             )
         return self._client
 
@@ -118,19 +109,11 @@ class OpenAIAdapter(ILLMBridge):
             "POST", _CHAT_COMPLETIONS_PATH, json=payload
         ) as response:
             response.raise_for_status()
-            # 使用列表收集字符串，避免频繁字符串拼接
-            buffer_parts: List[str] = []
-            buffer_length = 0
-            
+            buffer = ""
             async for line in response.aiter_lines():
-                buffer_parts.append(line)
-                buffer_parts.append("\n")
-                buffer_length += len(line) + 1
-                
-                # 检查是否包含SSE分隔符
-                current_buffer = "".join(buffer_parts)
-                if _SSE_LINE_DELIMITER in current_buffer:
-                    chunks = current_buffer.split(_SSE_LINE_DELIMITER)
+                buffer += line + "\n"
+                if _SSE_LINE_DELIMITER in buffer:
+                    chunks = buffer.split(_SSE_LINE_DELIMITER)
                     for chunk_str in chunks[:-1]:
                         chunk_str = chunk_str.strip()
                         if not chunk_str:
@@ -138,11 +121,7 @@ class OpenAIAdapter(ILLMBridge):
                         parsed = self._parse_sse_chunk(chunk_str)
                         if parsed is not None:
                             yield parsed
-                    
-                    # 保留最后一个不完整的chunk
-                    remaining = chunks[-1]
-                    buffer_parts = [remaining]
-                    buffer_length = len(remaining)
+                    buffer = chunks[-1]
 
     async def embed(self, text: str) -> List[float]:
         client = await self._ensure_client()
@@ -163,11 +142,7 @@ class OpenAIAdapter(ILLMBridge):
             client = await self._ensure_client()
             resp = await client.get(_MODELS_PATH)
             return resp.status_code == 200
-        except Exception as exc:
-            # 记录异常信息，不静默吞没
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning("LLM validation failed: %s", exc, exc_info=True)
+        except Exception:
             return False
 
     def get_sdk_type(self) -> SDKType:

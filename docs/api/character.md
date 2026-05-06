@@ -1,310 +1,467 @@
 # 角色系统 (Character)
 
-角色系统负责管理虚拟角色的创建、性格建模、记忆存储和行为一致性验证。
+完整角色实体系统，整合OCEAN人格、PAD情感、欲望驱动、GOAP规划、效用决策和社交感知。
 
-## 核心组件
+## 模块概览
 
-::: luqi_engine.character.character_manager
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
+```
+luqi_engine/character/
+├── personality.py          — OceanPersonality OCEAN五因素人格
+├── emotion.py              — PADState / ExtendedPAD PAD情感空间
+├── desire.py               — DesireEngine 欲望驱动引擎
+├── memory.py               — MemoryStore 角色记忆存储
+├── goap.py                 — GOAPPlanner / GOAPAction 目标导向规划
+├── utility.py              — UtilityBasedAI / CEMPlanner 效用决策
+├── social_perception.py    — SocialPerception 社交感知
+├── character_entity.py     — CharacterEntity 完整角色实体 ⭐核心
+├── deep_character.py       — DeepCharacter 深度角色分析
+├── narrative_identity.py   — NarrativeIdentity 叙事身份
+├── existential_model.py    — ExistentialProfile 存在主义模型
+├── jungian_model.py        — JungianProfile 荣格心理模型
+└── social_evolution.py     — SocialEvolutionEngine 社交关系演化
+```
 
-::: luqi_engine.character.character_entity
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.character.personality
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.character.emotion
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.character.memory
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-## OCEAN 性格模型
-
-角色性格基于**大五人格模型 (OCEAN)** 量化：
-
-| 维度 | 英文 | 说明 | 高分特征 | 低分特征 |
-|------|------|------|----------|----------|
-| **O** | Openness | 开放性 | 创意、好奇 | 实际、传统 |
-| **C** | Conscientiousness | 尽责性 | 有条理、自律 | 随性、灵活 |
-| **E** | Extraversion | 外向性 | 社交、活跃 | 内向、独立 |
-| **A** | Agreeableness | 宜人性 | 合作、友善 | 竞争、批判 |
-| **N** | Neuroticism | 神经质 | 敏感、情绪化 | 稳定、冷静 |
-
-每个维度分数范围：**0-100**
+## OceanPersonality — OCEAN人格模型
 
 ```python
+class OceanPersonality:
+    """基于Big Five (OCEAN) 的性格量化模型
+
+    五维度: Openness / Conscientiousness / Extraversion / Agreeableness / Neuroticism
+    分数范围: [0, 100] 每维度，默认50.0（中间值）
+
+    类常量:
+      DIMENSION_NAMES = ("openness", "conscientiousness", "extraversion",
+                         "agreeableness", "neuroticism")
+      SCORE_MIN = 0
+      SCORE_MAX = 100
+      SCORE_MIDPOINT = 50.0
+      INFLUENCE_SCALE = 0.02  # 人格对决策的影响系数
+    """
+
+    def __init__(
+        self,
+        openness: float = 50.0,
+        conscientiousness: float = 50.0,
+        extraversion: float = 50.0,
+        agreeableness: float = 50.0,
+        neuroticism: float = 50.0,
+        config: Optional[CharacterConfig] = None,
+    ) -> None: ...
+
+    def get_score(self, dimension: str) -> float:
+        """获取指定维度的分数"""
+
+    def set_score(self, dimension: str, value: float) -> None:
+        """设置指定维度的分数 (自动钳制到[0,100])"""
+
+    def adapt(self, deltas: Dict[str, float]) -> None:
+        """渐进式适应调整 (受adaptation_rate控制)"""
+
+    def influence_decision(self, action_weights: Dict[str, float]) -> Dict[str, float]:
+        """人格影响决策权重计算
+        各维度影响因子:
+          openness × 0.3 (探索)
+          conscientiousness × 0.3 (计划)
+          extraversion × 0.3 (社交)
+          agreeableness × 0.3 (合作)
+          neuroticism × -0.25 (压力，负向)
+        """
+
+    def to_dict(self) -> Dict[str, float]: ...
+    def distance_to(self, other: OceanPersonality) -> float: ...
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, float], config: Optional[CharacterConfig] = None) -> OceanPersonality: ...
+```
+
+## PADState — PAD情感状态
+
+```python
+@dataclass
+class PADState:
+    """Pleasure/Arousal/Dominance 三维情感空间
+
+    维度范围: [-1.0, 1.0]
+    - pleasure: 愉悦度 (-1=痛苦, +1=快乐)
+    - arousal: 唤醒度 (-1=平静, +1=激动)
+    - dominance: 支配度 (-1=被支配, +1=支配)
+
+    阻尼机制: 每次更新后自动衰减 (默认damping=0.85)
+    """
+
+    DIMENSION_MIN: ClassVar[float] = -1.0
+    DIMENSION_MAX: ClassVar[float] = 1.0
+    NEUTRAL: ClassVar[float] = 0.0
+    DEFAULT_DAMPING: ClassVar[float] = 0.85
+
+    pleasure: float = 0.0
+    arousal: float = 0.0
+    dominance: float = 0.0
+    damping: float = 0.85
+
+    def update(self, delta_p: float, delta_a: float, delta_d: float,
+                scale: float = 1.0) -> PADState:
+        """带阻尼的增量更新"""
+
+    def decay(self) -> PADState:
+        """自然衰减回归中性"""
+
+    def to_tuple(self) -> Tuple[float, float, float]: ...
+```
+
+**七情→PAD映射表**:
+
+| 情感 | P(愉悦) | A(唤醒) | D(支配) |
+|------|---------|---------|---------|
+| joy | +0.6 | +0.5 | +0.3 |
+| anger | -0.6 | +0.7 | +0.4 |
+| sorrow | -0.7 | -0.3 | -0.4 |
+| fear | -0.7 | +0.5 | -0.5 |
+| love | +0.5 | +0.3 | +0.2 |
+| disgust | -0.5 | +0.3 | +0.1 |
+| desire | +0.3 | +0.6 | +0.2 |
+
+**OCEAN→PAD基线映射** (Mehrabian 1996):
+```
+Pleasure  = E(+0.21) + A(+0.25) + N(-0.26) + C(+0.12) + O(+0.08)
+Arousal   = E(+0.15) + N(+0.20) + O(+0.18) + A(-0.05) + C(+0.05)
+Dominance = E(+0.30) + C(+0.15) + A(-0.12) + N(-0.22) + O(+0.05)
+```
+
+## DesireEngine — 欲望驱动引擎
+
+```python
+class DesireEngine(IDesireEngine):
+    """情感触发 → 欲望更新 → 目标优化驱动链
+
+    核心方法:
+    - get_desires(): 获取当前欲望向量
+    - update_desires(): 根据情感变化更新欲望
+    - compute_drive_chain(): 计算驱动力链 (优先级排序的目标列表)
+
+    情感-欲望映射 (EMOTION_DESIRE_MAP):
+      joy → belonging(+0.6), self_actualization(+0.4)
+      fear → safety(+0.8), physiological(+0.3)
+      love → belonging(+0.7), relatedness(+0.5)
+      anger → esteem(+0.6), safety(+0.3)
+    """
+
+    UPDATE_SCALE: ClassVar[float] = 0.1
+    SATIATION_DECAY: ClassVar[float] = 0.01
+    EMOTION_DESIRE_MAP: ClassVar[Dict] = {...}
+
+    def __init__(self, config: Optional[DesireConfig] = None) -> None: ...
+
+    async def get_desires(self, character_id: EntityId) -> DesireVector: ...
+
+    async def update_desires(
+        self,
+        character_id: EntityId,
+        emotion_delta: Dict[str, float],
+    ) -> DesireVector: ...
+
+    async def compute_drive_chain(
+        self,
+        character_id: EntityId,
+        context: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """返回按优先级排序的驱动力链 [{goal, priority, urgency, desire_name, strength}]"""
+```
+
+## Motive & MotivationEngine — 动机系统
+
+```python
+@dataclass
+class Motive:
+    """动机单元"""
+    motive_id: str
+    name: str
+    layer: int                    # 1=生存层, 2=社交层, 3=自我实现层
+    base_intensity: float         # 基础强度 [0, 1]
+    decay_rate: float = 0.001     # 衰减率
+    urgency_curve: str = "sigmoid"  # exponential/sigmoid/linear
+    current_satisfaction: float = 0.5
+
+
+class MotivationEngine:
+    """三层动机引擎
+
+    层级权重:
+      Layer 1 (生存): weight=3.0
+      Layer 2 (社交): weight=2.0
+      Layer 3 (自我实现): weight=1.0
+
+    紧迫性曲线:
+      - exponential: strength = deprivation² (快速上升)
+      - sigmoid: 1/(1+e^(-10(deprivation-0.5))) (平滑过渡)
+      - linear: strength = deprivation (线性)
+    """
+
+    def __init__(self, motives: Optional[List[Motive]] = None) -> None: ...
+
+    def add_motive(self, motive: Motive) -> None: ...
+
+    def calculate_drive_strength(
+        self, motive: Motive, context: Optional[Dict[str, Any]] = None
+    ) -> float:
+        """计算动机驱动力强度 = intensity × urgency × layer_weight × context_mod"""
+
+    def get_prioritized_motives(
+        self, context: Optional[Dict[str, Any]] = None
+    ) -> List[Tuple[str, float]]:
+        """返回 [(motive_id, strength)] 按强度降序排列"""
+
+    def update_satisfaction(self, motive_id: str, delta: float) -> None: ...
+    def decay_all(self, delta_time: float) -> None: ...
+
+    @property
+    def motives(self) -> Dict[str, Motive]: ...
+```
+
+## SocialPerception — 社交感知
+
+```python
+class SocialPerception:
+    """社交关系量化系统
+
+    三个核心维度:
+    - RelationshipPotential: 关系势能 [-1, 1]，带速度衰减
+    - ContextFidelity: 语境保真度 [0, 1]，多源失真累积
+    - InterventionEntropy: 干预熵值 [0, 1]，记录外部干预频率
+    """
+
+    INTERACTION_WEIGHT: ClassVar[float] = 0.3
+    DISTANCE_FACTOR: ClassVar[float] = 0.05
+
+    def __init__(self) -> None: ...
+
+    def update_potential(
+        self, char_a: EntityId, char_b: EntityId, delta: float
+    ) -> None: ...
+
+    def get_potential(self, char_a: EntityId, char_b: EntityId) -> RelationshipPotential: ...
+
+    def update_fidelity(self, char_id: EntityId, source: str, distortion: float) -> None: ...
+
+    def record_intervention(self, char_id: EntityId) -> None: ...
+```
+
+### RelationshipPotential — 关系势能
+
+```python
+@dataclass
+class RelationshipPotential:
+    POTENTIAL_MIN: ClassVar[float] = -1.0
+    POTENTIAL_MAX: ClassVar[float] = 1.0
+    DECAY_RATE: ClassVar[float] = 0.01
+
+    value: float = 0.0           # 当前势能值
+    velocity: float = 0.0        # 变化速度 (带惯性)
+
+    def update(self, delta: float) -> None:
+        """增量更新，velocity提供惯性效果"""
+
+    def decay(self) -> None:
+        """自然衰减回归零点"""
+```
+
+### ContextFidelity — 语境保真度
+
+```python
+@dataclass
+class ContextFidelity:
+    FIDELITY_MIN: ClassVar[float] = 0.0
+    FIDELITY_MAX: ClassVar[float] = 1.0
+    DECAY_RATE: ClassVar[float] = 0.005
+
+    value: float = 1.0
+    distortion_sources: Dict[str, float] = field(default_factory=dict)
+
+    def update(self, source: str, distortion: float) -> None:
+        """添加失真源，自动累加"""
+
+    def remove_distortion(self, source: str) -> None:
+        """移除指定失真源"""
+
+    def decay(self) -> None:
+        """各失真源独立衰减"""
+```
+
+## GOAPPlanner — 目标导向行动规划
+
+```python
+class GOAPAction:
+    """GOAP行动定义"""
+    action_name: str
+    preconditions: Dict[str, Any]    # 前置条件
+    effects: Dict[str, Any]          # 执行效果
+    cost: float = 1.0                # 行动代价
+
+
+class GOAPWorldState:
+    """世界状态容器"""
+    def __init__(self, data: Optional[Dict[str, Any]] = None) -> None: ...
+    def get(self, key: str, default: Any = None) -> Any: ...
+    def set(self, key: str, value: Any) -> None: ...
+    def matches(self, other: GOAPWorldState, keys: Optional[List[str]] = None) -> bool: ...
+
+
+class GOAPPlanner:
+    """目标导向行动规划器 (A*搜索)
+
+    算法:
+    1. 从目标状态反向推导前置条件图
+    2. A*搜索找到最小代价行动序列
+    3. 返回有序的行动计划或None(不可达)
+    """
+
+    def __init__(self, actions: Optional[List[GOAPAction]] = None) -> None: ...
+
+    def plan(self, current_state: GOAPWorldState, goal_state: GOAPWorldState) -> Optional[List[GOAPAction]]:
+        """规划从当前状态到目标状态的行动序列"""
+
+    def register_action(self, action: GOAPAction) -> None: ...
+```
+
+## CharacterEntity — 完整角色实体 ⭐ 核心
+
+```python
+class CharacterEntity:
+    """完整角色实体
+
+    整合子系统:
+    - personality: OceanPersonality (OCEAN人格)
+    - emotion: PADState (基础情感)
+    - extended_emotion: ExtendedPAD (扩展情感+七情权重)
+    - desire_engine: DesireEngine (欲望驱动)
+    - memory: MemoryStore (记忆存储)
+    - motivation: MotivationEngine (三层动机)
+    - goap_planner: GOAPPlanner (目标规划)
+    - utility_ai: UtilityBasedAI (效用决策)
+    - cem_planner: CEMPlanner (交叉熵方法)
+    - social_perception: SocialPerception (社交感知)
+
+    决策循环:
+      perceive → motivation.evaluate → GOAP.plan → IAUS.score
+      → personality.modify → emotion.apply → CEM.perturb → execute
+    """
+
+    def __init__(
+        self,
+        entity_id: Optional[EntityId] = None,
+        name: str = "",
+        personality: Optional[OceanPersonality] = None,
+        emotion: Optional[PADState] = None,
+        extended_emotion: Optional[ExtendedPAD] = None,
+        desire_engine: Optional[DesireEngine] = None,
+        memory: Optional[MemoryStore] = None,
+        motivation: Optional[MotivationEngine] = None,
+        goap_planner: Optional[GOAPPlanner] = None,
+        utility_ai: Optional[UtilityBasedAI] = None,
+        cem_planner: Optional[CEMPlanner] = None,
+        social_perception: Optional[SocialPerception] = None,
+        config: Optional[CharacterConfig] = None,
+    ) -> None: ...
+
+    async def decide(
+        self,
+        context: Dict[str, Any],
+        available_actions: Optional[List[GOAPAction]] = None,
+        available_behaviors: Optional[List[BehaviorOption]] = None,
+    ) -> Optional[GOAPAction]:
+        """完整决策循环，返回选定的行动"""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """导出为字典 (用于序列化/快照)"""
+
+    @property
+    def current_goal(self) -> Optional[str]: ...
+    @property
+    def current_plan(self) -> Optional[List[GOAPAction]]: ...
+```
+
+## MemoryStore — 角色记忆存储
+
+```python
+class MemoryType(str, Enum):
+    EPISODIC = "episodic"      # 情景记忆 (事件)
+    SEMANTIC = "semantic"      # 语义记忆 (知识)
+    FLASHBULB = "flashbulb"    # 闪光灯记忆 (高情绪)
+
+
+@dataclass
+class MemoryEntry:
+    entry_id: str
+    content: str
+    memory_type: MemoryType
+    importance: float = 0.5
+    created_at: float = field(default_factory=time.time)
+    last_accessed: float = field(default_factory=time.time)
+    access_count: int = 0
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class MemoryStore:
+    """分层记忆存储系统
+
+    特性:
+    - 分层管理: 近期/中期/长期三层
+    - 自动衰减: 访问频率和重要性加权
+    - 容量限制: 可配置每层容量
+    """
+
+    def __init__(self, config: Optional[CharacterConfig] = None) -> None: ...
+
+    def store(self, entry: MemoryEntry) -> str:
+        """存储记忆条目，返回entry_id"""
+
+    def retrieve(
+        self,
+        query: str,
+        top_k: int = 5,
+        memory_type: Optional[MemoryType] = None,
+    ) -> List[MemoryEntry]:
+        """相关性检索"""
+
+    def get_by_id(self, entry_id: str) -> Optional[MemoryEntry]: ...
+    def forget(self, entry_id: str) -> bool: ...
+    def get_stats(self) -> Dict[str, int]: ...
+```
+
+## 使用示例
+
+```python
+from luqi_engine.character.character_entity import CharacterEntity
 from luqi_engine.character.personality import OceanPersonality
+from luqi_engine.character.emotion import PADState
+from luqi_engine.character.desire import DesireEngine
+from luqi_engine.character.motivation import Motive, MotivationEngine
 
-# 创建性格实例
-personality = OceanPersonality(
-    openness=85,
-    conscientiousness=70,
-    extraversion=35,
-    agreeableness=75,
-    neuroticism=55,
+# 创建角色
+char = CharacterEntity(
+    entity_id="hero_001",
+    name="李逍遥",
+    personality=OceanPersonality(
+        openness=75,      # 探索欲强
+        conscientiousness=60,
+        extraversion=80,   # 外向
+        agreeableness=65,
+        neuroticism=35,    # 情绪稳定
+    ),
+    emotion=PADState(pleasure=0.3, arousal=0.5, dominance=0.2),
 )
 
-# 获取分数
-score = personality.get_score("openness")  # 85.0
+# 设置动机
+motivation = MotivationEngine(motives=[
+    Motive("survival", "生存", layer=1, base_intensity=0.9),
+    Motive("belonging", "归属", layer=2, base_intensity=0.7),
+    Motive("self_actual", "自我实现", layer=3, base_intensity=0.5),
+])
+char.motivation = motivation
 
-# 动态调整（根据经历微调）
-personality.set_score("openness", 88.0)
-```
-
-## 角色管理器 (CharacterManager)
-
-### 创建角色
-
-```python
-import asyncio
-from luqi_engine.engine import LuqiEngine
-
-async def create_characters():
-    engine = LuqiEngine()
-    await engine.initialize()
-
-    # 方式1: 使用模板创建
-    char_id1 = await engine.create_character({
-        "name": "守卫A",
-        "template": "guard",  # 使用内置模板
-        "overrides": {
-            "name": "铁壁守卫",
-            "personality": {"conscientiousness": 95},
-        },
-    })
-
-    # 方式2: 完全自定义
-    char_id2 = await engine.create_character({
-        "name": "自定义角色",
-        "personality": {
-            "openness": 60,
-            "conscientiousness": 50,
-            "extraversion": 70,
-            "agreeableness": 65,
-            "neuroticism": 40,
-        },
-        "motives": [
-            {"motive_id": "exploration", "name": "探索", "layer": 2, "base_intensity": 0.8},
-        ],
-        "background": "来自远方的旅行者",
-    })
-
-    return char_id1, char_id2
-```
-
-### 内置 NPC 模板
-
-引擎提供 6 种预定义模板：
-
-| 模板名 | 类型 | 典型特征 |
-|--------|------|----------|
-| `guard` | 守卫 | 高尽责性、秩序感强、职责驱动 |
-| `merchant` | 商人 | 高外向性、利润导向、社交能力强 |
-| `scholar` | 学者 | 高开放性、求知欲强、内向 |
-| `warrior` | 战士 | 中高外向性、战斗动机、荣誉感 |
-| `mage` | 法师 | 极高开放性、神秘感、知识驱动 |
-| `assassin` | 刺客 | 高尽责性、隐匿动机、谨慎 |
-
-### 查询角色信息
-
-```python
-# 获取角色实体
-character = engine.character_manager.get_character(char_id)
-print(character.name)           # 角色名称
-print(character.entity_id)      # 唯一ID
-
-# 获取性格量化值
-personality = await engine.character_manager.get_personality(char_id)
-print(personality)
-# {'openness': 85.0, 'conscientiousness': 70.0, ...}
-
-# 列出所有角色
-all_chars = engine.character_manager.list_characters()
-print(f"当前有 {len(all_chars)} 个角色")
-```
-
-## 记忆系统
-
-角色具备**分层记忆**能力：
-
-```python
-# 存储记忆
-await engine.character_manager.store_memory(
-    character_id=char_id,
-    memory_type="short_term",
-    content={
-        "who": "玩家",
-        "what": "送了我一本书",
-        "when": time.time(),
-        "where": "图书馆",
-        "why": "作为礼物",
-        "emotional_valence": 0.8,  # 正面情感 -1~1
-    },
-)
-
-# 检索相关记忆
-memories = await engine.character_manager.retrieve_memories(
-    character_id=char_id,
-    query="书 礼物",
-    limit=5,
-)
-for mem in memories:
-    print(f"{mem['who']}: {mem['what']}")
-```
-
-### 记忆类型
-
-| 类型 | 枚举值 | 说明 | 容量 | 保持时间 |
-|------|--------|------|------|----------|
-| `MemoryType.SHORT_TERM` | `"short_term"` | 短期记忆 | 100条 | 数小时~数天 |
-| `MemoryType.LONG_TERM` | `"long_term"` | 长期记忆 | 10000条 | 永久 |
-| `MemoryType.EMOTIONAL` | `"emotional"` | 情绪记忆 | 500条 | 情感关联 |
-
-> **注意**: `memory_type` 参数应使用 `MemoryType` 枚举（如 `MemoryType.SHORT_TERM`），而非直接传入字符串字面量。`MemoryType` 为 `str, Enum` 类型，可直接与字符串比较。
-
-## 行为一致性验证
-
-确保角色行为符合其性格设定：
-
-```python
-is_consistent, score = await engine.character_manager.validate_behavior_consistency(
-    character_id=char_id,
-    proposed_action={
-        "action": "attack",
-        "target": "innocent_person",
-    },
-)
-
-if is_consistent:
-    print(f"行为一致 (置信度: {score:.2f})")
-else:
-    print(f"行为可能不一致 (置信度: {score:.2f})")
-    # 对于高宜人性的角色，攻击无辜者是不一致的
-```
-
-## 动机系统
-
-角色行为由**多层动机**驱动：
-
-```python
-from luqi_engine.character.character_entity import Motive, MotivationEngine
-
-engine = MotivationEngine()
-
-# 添加动机
-engine.add_motive(Motive(
-    motive_id="knowledge",
-    name="求知",
-    layer=3,  # 层级: 1=生存, 2=社交, 3=自我实现
-    base_intensity=0.9,  # 基础强度 0-1
-    urgency_curve="sigmoid",  # 紧急程度曲线
-))
-
-# 获取当前主导动机
-dominant = engine.get_dominant_motive()
-print(f"当前主导动机: {dominant.name} (强度: {dominant.current_intensity})")
-```
-
-## PAD 情感模型
-
-角色情感状态使用 **PAD三维模型** 表示：
-
-| 维度 | 范围 | 说明 |
-|------|------|------|
-| **Pleasure** | -1 ~ 1 | 愉悦度（正/负面情绪） |
-| **Arousal** | -1 ~ 1 | 唤醒度（平静/激动） |
-| **Dominance** | -1 ~ 1 | 支配度（顺从/控制） |
-
-```python
-character = engine.character_manager.get_character(char_id)
-
-# 当前情感状态
-print(f"愉悦度: {character.emotion.pleasure:.2f}")
-print(f"唤醒度: {character.emotion.arousal:.2f}")
-print(f"支配度: {character.emotion.dominance:.2f}")
-
-# 情感会随对话和事件动态变化
-```
-
-## 决策管线 (Decision Pipeline)
-
-角色决策采用**多层级管线架构**，从动机到行动经过6个阶段：
-
-```
-动机排序 → 欲望驱动链 → GOAP目标选择 → IAUS效用评估 → CEM行为选择 → 性格/情感修正
-```
-
-### GOAP 目标选择器 (GOAPGoalSelector)
-
-根据PAD/OCEAN状态自动选择GOAP目标世界状态：
-
-| PAD条件 | 目标状态 |
-|---------|---------|
-| pleasure < -0.3 | threat_avoided + situation_assessed |
-| arousal > 0.5 & pleasure > 0.2 | conversation_started + is_alone=False |
-| arousal > 0.4 & pleasure < 0 | conversation_started + is_alone=False |
-| pleasure > 0.3 | situation_assessed + memory_reflected |
-| openness > 65 | memory_reflected + has_memory |
-| extraversion > 60 | conversation_started + is_alone=False |
-
-### 效用评估 (UtilityBasedAI)
-
-基于IAUS架构的效用评估，Consideration的input_fn自动绑定PAD/OCEAN运行时值。
-
-### 默认行为 (DefaultBehaviors)
-
-引擎预置5种默认行为选项：
-
-| 行为 | 说明 |
-|------|------|
-| socialize | 社交互动 |
-| express | 情感表达 |
-| observe | 观察环境 |
-| reminisce | 回忆往事 |
-| depart | 离开场景 |
-
-## 欲望引擎 (DesireEngine)
-
-欲望引擎通过 `EMOTION_DESIRE_MAP` 将13种情感映射到特定欲望维度，实现情感驱动的欲望更新。
-
-### 情感-欲望映射
-
-| 情感 | 目标欲望维度 | 权重 |
-|------|-------------|------|
-| joy | self_actualization | 0.3 |
-| anger | esteem | 0.5 |
-| sorrow | belonging | 0.6 |
-| fear | safety | 0.8 |
-| love | belonging | 0.7 |
-| disgust | safety | 0.4 |
-| desire | esteem | 0.5 |
-| anxiety | safety | 0.7 |
-| surprise | self_actualization | 0.2 |
-| trust | belonging | 0.4 |
-| hope | self_actualization | 0.5 |
-| curiosity | self_actualization | 0.6 |
-
-## 轻量角色 (LightCharacter)
-
-用于次要角色的轻量级数据结构，仅保留名称、性格摘要和叙事角色权重：
-
-```python
-from luqi_engine.character.light_character import LightCharacter
-
-light = LightCharacter(
-    name="路人甲",
-    personality_summary="普通市民，性格温和",
-    narrative_role=0.3,
-)
+# 决策
+action = await char.decide(context={"danger_level": 0.3})
+print(f"选定行动: {action.action_name if action else '无'}")
+print(f"当前目标: {char.current_goal}")
 ```

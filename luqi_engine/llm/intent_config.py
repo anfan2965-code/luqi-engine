@@ -1,5 +1,3 @@
-"""意图配置模块 - 管理意图分类的配置"""
-
 from __future__ import annotations
 
 from pathlib import Path

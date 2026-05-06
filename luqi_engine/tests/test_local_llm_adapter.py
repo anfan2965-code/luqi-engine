@@ -1,5 +1,3 @@
-"""本地LLM适配器测试"""
-
 from __future__ import annotations
 
 import asyncio

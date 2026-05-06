@@ -1,5 +1,3 @@
-"""算法最高法院测试"""
-
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 

@@ -1,5 +1,3 @@
-"""间隙预计算测试"""
-
 import asyncio
 
 import pytest

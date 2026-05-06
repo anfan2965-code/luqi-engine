@@ -19,6 +19,8 @@ from luqi_engine.core.types import (
 )
 from luqi_engine.core.constants import (
     LLMMessageRole,
+    ToneType,
+    LengthHint,
     _ANTHROPIC_PREFILL_DIALOGUE,
 )
 from luqi_engine.llm.prompt_builder import PromptBuilder
@@ -28,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 _FALLBACK_INTENT = "unknown"
 _FALLBACK_CONFIDENCE = 0.0
-_FALLBACK_TONE = "neutral"
-_FALLBACK_LENGTH_HINT = "medium"
+_FALLBACK_TONE = ToneType.NEUTRAL
+_FALLBACK_LENGTH_HINT = LengthHint.MEDIUM
 _FALLBACK_SEVEN_TRIGGER = ""
 _FALLBACK_ACTION = ""
 
@@ -190,8 +192,8 @@ class DialogueAgent(IAgentRunner):
             ),
             action="respond",
             key_points=[reply_text],
-            tone="neutral",
-            length_hint="medium",
+            tone=ToneType.NEUTRAL,
+            length_hint=LengthHint.MEDIUM,
         )
 
     def get_name(self) -> str:

@@ -1,5 +1,3 @@
-"""轻量级角色模块 - 提供简化的角色实现"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

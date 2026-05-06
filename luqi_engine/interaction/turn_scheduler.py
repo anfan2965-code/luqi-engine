@@ -1,5 +1,3 @@
-"""轮次调度器 - 管理多角色对话的轮次分配"""
-
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

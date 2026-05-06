@@ -2217,14 +2217,14 @@ async def novelist_agent_run(
 async def critic_agent_run(
     context: CriticContext,         # dialogue_output + narrative + algorithm_results
     llm_bridge: LLMBridge,
-    mode: Literal["full", "light"],  # light=AUTO_MODE用
+    mode: CriticMode,              # CriticMode枚举 (FULL/LIGHT)
 ) -> CriticVerdict: ...
 
 # === Atmosphere Agent (v0.3 新增) ===
 async def atmosphere_agent_run(
     context: AtmosphereContext,    # scene_data + recent_events + mood_baseline
     llm_bridge: LLMBridge,
-    mode: Literal["light", "full"],  # light=每轮, full=场景切换
+    mode: AtmosphereMode,         # AtmosphereMode枚举 (LIGHT/FULL)
 ) -> AtmosphereOutput: ...
 
 async def prerender_atmosphere_light(

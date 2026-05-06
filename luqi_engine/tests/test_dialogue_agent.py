@@ -1,5 +1,3 @@
-"""对话智能体测试"""
-
 import asyncio
 import json
 import pytest
@@ -7,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from luqi_engine.agents.dialogue_agent import DialogueAgent
 from luqi_engine.core.types import CanonicalIR, EmotionDelta, LLMResponse, SDKType
+from luqi_engine.core.constants import ToneType, LengthHint
 
 
 _MOCK_CANONICAL_IR_JSON = json.dumps({
@@ -17,7 +16,7 @@ _MOCK_CANONICAL_IR_JSON = json.dumps({
     "action": "respond",
     "action_params": {"target": "user"},
     "key_points": ["问候", "友好"],
-    "tone": "warm",
+    "tone": "casual",
     "length_hint": "medium",
     "narrative_signal": None,
     "memory_to_add": None,
@@ -57,8 +56,8 @@ class TestDialogueAgentRun:
         assert isinstance(result, CanonicalIR)
         assert result.intent == "greeting"
         assert result.confidence == pytest.approx(0.9)
-        assert result.tone == "warm"
-        assert result.length_hint == "medium"
+        assert result.tone == ToneType.CASUAL
+        assert result.length_hint == LengthHint.MEDIUM
         assert result.seven_trigger == "喜"
         assert result.action == "respond"
         assert result.key_points == ["问候", "友好"]

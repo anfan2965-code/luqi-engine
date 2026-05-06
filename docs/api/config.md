@@ -1,245 +1,199 @@
 # 配置系统 (Config)
 
-配置系统集中管理引擎的所有可调参数，支持代码配置和外部YAML文件加载。
+引擎全局配置管理，支持代码配置、YAML文件加载和环境变量覆盖。
 
-## EngineConfig 主配置类
+> **v1.3.0 更新**: 新增 `DesireConfig`、`AgentConfig`（四智能体独立配置）、`NarrativeDocConfig`、`PaceConfig`、`TrainingConfig`。保留 `CognitiveMemoryConfig`（向后兼容）。修正 `LocalModelConfig` 参数。
 
-::: luqi_engine.core.config.EngineConfig
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
+## 模块概览
 
-## 子配置类
+```
+luqi_engine/core/
+├── config.py               — EngineConfig 主配置 + 所有子配置dataclass + ConfigMixin序列化
+├── config_loader.py         — YAML/JSON配置文件加载器
+└── gbnf_schema.py           — GBNF格式约束定义
+```
 
-### PerformanceConfig - 性能配置
+## EngineConfig — 主配置类
 
-::: luqi_engine.core.config.PerformanceConfig
-    options:
-      show_root_heading: true
+```python
+@dataclass
+class EngineConfig(ConfigMixin):
+    """引擎总配置，聚合所有子配置
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `target_fps` | 30 | 目标帧率 |
-| `max_cpu_percent` | 70.0 | CPU使用上限 (%) |
-| `max_memory_mb` | 4096.0 | 内存使用上限 (MB) |
-| `response_latency_ms` | 300.0 | 目标响应延迟 (ms) |
-| `inactive_release_threshold_sec` | 300.0 | 不活跃资源释放阈值 (秒) |
-| `resource_recovery_efficiency` | 0.7 | 资源回收效率 |
-| `object_pool_initial_size` | 64 | 对象池初始大小 |
-| `async_task_concurrency` | 8 | 异步任务并发数 |
+    继承 ConfigMixin 提供 to_dict() / from_dict() 序列化能力
+    """
 
-### LLMConfig - LLM配置
+    performance: PerformanceConfig = field(default_factory=PerformanceConfig)
+    worldview: WorldViewConfig = field(default_factory=WorldViewConfig)
+    scene: SceneConfig = field(default_factory=SceneConfig)
+    character: CharacterConfig = field(default_factory=CharacterConfig)
+    narrative: NarrativeConfig = field(default_factory=NarrativeConfig)
+    interaction: InteractionConfig = field(default_factory=InteractionConfig)
+    llm: LLMConfig = field(default_factory=LLMConfig)
+    local_model: LocalModelConfig = field(default_factory=LocalModelConfig)
+    desire: DesireConfig = field(default_factory=DesireConfig)
+    mobile: MobileConfig = field(default_factory=MobileConfig)
+    cognitive_memory: CognitiveMemoryConfig = field(default_factory=CognitiveMemoryConfig)
+    local_llm: LocalLLMConfig = field(default_factory=LocalLLMConfig)
+    chaos: ChaosConfig = field(default_factory=ChaosConfig)
+    agent: AgentConfig = field(default_factory=AgentConfig)              # v1.3.0 新增
+    narrative_doc: NarrativeDocConfig = field(default_factory=NarrativeDocConfig)  # v1.3.0 新增
+    pace: PaceConfig = field(default_factory=PaceConfig)                # v1.3.0 新增
+    training: TrainingConfig = field(default_factory=TrainingConfig)    # v1.3.0 新增
+    seed: Optional[int] = None
+    debug_mode: bool = False
 
-::: luqi_engine.core.config.LLMConfig
-    options:
-      show_root_heading: true
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'EngineConfig':
+        """从字典创建配置，支持部分字段更新"""
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `sdk_type` | "openai" | SDK类型 (openai/deepseek/anthropic) |
-| `api_key` | "" | API密钥 (也可通过环境变量设置) |
-| `base_url` | "https://api.openai.com/v1" | API端点 |
-| `model` | "deepseek-chat" | 模型名称 |
-| `temperature` | 0.7 | 生成温度 (0-1) |
-| `max_tokens` | 4096 | 最大生成token数 |
-| `timeout` | 30.0 | 请求超时时间 (秒) |
-| `enable_deepseek_optimization` | True | 是否启用DeepSeek优化 |
-| `context_compression_threshold` | 8000 | 上下文压缩阈值 (tokens) |
-| `system_token_budget` | 300 | 系统提示词预算 (tokens) |
+    def to_dict(self) -> Dict[str, Any]:
+        """序列化为字典（递归处理嵌套dataclass）"""
+```
 
-### NarrativeConfig - 叙事配置
+## 子配置类速查
 
-::: luqi_engine.core.config.NarrativeConfig
-    options:
-      show_root_heading: true
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `max_branch_depth` | 10 | 最大分支深度 |
-| `core_story_completion_rate` | 0.85 | 主线完成率目标 |
-| `elasticity_coefficient` | 50.0 | 弹性系数 (0-100) |
-| `deviation_warning_response_sec` | 1.0 | 偏离警告响应时间 (秒) |
-| `branch_merge_enabled` | True | 启用分支合并 |
-| `branch_pruning_enabled` | True | 启用分支剪枝 |
-| `elasticity_min` | 0.0 | 最小弹性值 |
-| `elasticity_max` | 100.0 | 最大弹性值 |
-| `branch_weight_core_story` | 0.4 | 主线权重 |
-| `branch_weight_character_driven` | 0.25 | 角色驱动权重 |
-| `branch_weight_random_event` | 0.15 | 随机事件权重 |
-| `branch_weight_elasticity` | 0.2 | 弹性权重 |
-
-### CharacterConfig - 角色配置
-
-::: luqi_engine.core.config.CharacterConfig
-    options:
-      show_root_heading: true
+### LLMConfig — LLM配置
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `personality_dimensions` | 5 | 性格维度数 (OCEAN=5) |
-| `personality_score_range` | (0, 100) | 性格分数范围 |
-| `behavior_consistency_threshold` | 0.95 | 行为一致性阈值 |
-| `short_term_memory_capacity` | 100 | 短期记忆容量 |
-| `long_term_memory_capacity` | 10000 | 长期记忆容量 |
-| `emotional_memory_capacity` | 500 | 情绪记忆容量 |
-| `memory_retrieval_limit` | 10 | 记忆检索限制数 |
-| `personality_adaptation_rate` | 0.02 | 性格适应速率 |
+| `sdk_type` | `"openai"` | SDK类型 (openai/deepseek/anthropic) |
+| `api_key` | `""` | API密钥 (也支持环境变量 `LLM_API_KEY`) |
+| `base_url` | `"https://api.openai.com/v1"` | API端点 |
+| `model` | `"deepseek-chat"` | 模型名称 |
+| `temperature` | `0.7` | 生成温度 [0,1] |
+| `max_tokens` | `4096` | 最大输出token数 |
+| `timeout` | `30.0` | 请求超时(秒) |
+| `enable_deepseek_optimization` | `True` | DeepSeek特殊优化开关 |
+| `context_compression_threshold` | `8000` | 上下文压缩阈值(tokens) |
 
-### SceneConfig - 场景配置
-
-::: luqi_engine.core.config.SceneConfig
-    options:
-      show_root_heading: true
+### LocalModelConfig — 本地模型管线配置
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `spatial_conflict_accuracy` | 0.95 | 空间冲突检测精度 |
-| `max_elements_per_scene` | 500 | 单场景最大元素数 |
-| `environment_update_interval_sec` | 1.0 | 环境更新间隔 (秒) |
-| `time_scale` | 1.0 | 时间流速倍率 |
-| `weather_transition_duration` | 30.0 | 天气过渡时长 (秒) |
+| `model_path` | `""` | 模型文件路径 |
+| `classification_threshold` | `0.85` | 分类置信度阈值 |
+| `export_endpoint` | `""` | 训练数据导出端点 |
+| `enable_debug_output` | `True` | 调试输出开关 |
+| `max_memory_mb` | `200.0` | 最大内存占用(MB) |
 
-### InteractionConfig - 交互配置
-
-::: luqi_engine.core.config.InteractionConfig
-    options:
-      show_root_heading: true
+### PerformanceConfig — 性能配置
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `max_concurrent_characters` | 50 | 最大同时在线角色数 |
-| `dialogue_fluency_target` | 4.0 | 对话流畅度目标 (1-5分) |
-| `relationship_dimensions` | ["friendship", ...] | 关系维度列表 |
-| `social_rules_enabled` | True | 启用社交规则 |
-| `dialogue_max_rounds` | 50 | 最大对话轮数 |
-| `context_window_turns` | 50 | 上下文窗口轮数 |
-| `key_info_retention_rate` | 0.98 | 关键信息保持率 |
+| `target_fps` | `30` | 目标帧率 |
+| `max_cpu_percent` | `70.0` | CPU上限(%) |
+| `max_memory_mb` | `4096.0` | 内存上限(MB) |
+| `response_latency_ms` | `300.0` | 目标延迟(ms) |
+| `inactive_release_threshold_sec` | `300.0` | 非活跃释放阈值(秒) |
+| `resource_recovery_efficiency` | `0.7` | 资源回收效率 |
+| `object_pool_initial_size` | `64` | 对象池初始容量 |
+| `async_task_concurrency` | `8` | 异步并发数 |
 
-### WorldViewConfig - 世界观配置
-
-::: luqi_engine.core.config.WorldViewConfig
-    options:
-      show_root_heading: true
+### NarrativeConfig — 叙事配置
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `conflict_detection_accuracy` | 0.95 | 冲突检测精度 |
-| `element_extraction_accuracy` | 0.90 | 元素提取精度 |
-| `relation_depth_limit` | 5 | 关系推理深度限制 |
-| `supported_content_types` | [...] | 支持的内容类型 |
+| `max_branch_depth` | `10` | 最大分支深度 |
+| `core_story_completion_rate` | `0.85` | 主线完成目标 |
+| `elasticity_coefficient` | `50.0` | 弹性系数 [0,100] |
+| `deviation_warning_response_sec` | `1.0` | 偏差警告响应时间(秒) |
+| `regression_methods` | `["natural","event_triggered","forced"]` | 回归方法列表 |
+| `branch_merge_enabled` | `True` | 分支合并开关 |
+| `branch_pruning_enabled` | `True` | 分支剪枝开关 |
 
-### LocalLLMConfig - 本地LLM配置
-
-::: luqi_engine.core.config.LocalLLMConfig
-    options:
-      show_root_heading: true
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `local_llm_enabled` | False | 是否启用本地LLM |
-| `local_llm_model_path` | "" | 模型文件路径 (.gguf) |
-| `local_llm_n_gpu_layers` | 0 | GPU加速层数 (0=CPU only) |
-| `local_llm_n_ctx` | 2048 | 上下文长度 |
-| `local_llm_max_tokens` | 512 | 最大输出token数 |
-| `local_llm_temperature` | 0.7 | 生成温度 |
-| `local_llm_top_p` | 0.9 | Top-P采样参数 |
-
-### MobileConfig - 移动端配置
-
-::: luqi_engine.core.config.MobileConfig
-    options:
-      show_root_heading: true
+### CharacterConfig — 角色配置
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `target_device` | "snapdragon_695" | 目标设备型号 |
-| `max_memory_mb` | 2048.0 | 最大内存限制 (MB) |
-| `max_cpu_percent` | 70.0 | CPU使用上限 (%) |
-| `local_model_memory_mb` | 200.0 | 本地模型内存 (MB) |
-| `target_fps` | 30 | 目标帧率 |
+| `personality_dimensions` | `5` | OCEAN维度数 |
+| `personality_score_range` | `(0, 100)` | 分数范围 |
+| `behavior_consistency_threshold` | `0.95` | 一致性阈值 |
+| `short_term_memory_capacity` | `100` | 短期记忆容量 |
+| `long_term_memory_capacity` | `10000` | 长期记忆容量 |
+| `emotional_memory_capacity` | `500` | 情感记忆容量 |
+| `memory_retrieval_limit` | `10` | 记忆检索上限 |
+| `personality_adaptation_rate` | `0.02` | 性格适应速率 |
 
-### CognitiveMemoryConfig - 认知记忆配置
+### DesireConfig — 欲望系统配置 (v1.3.0 新增)
 
-::: luqi_engine.core.config.CognitiveMemoryConfig
-    options:
-      show_root_heading: true
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `desire_dimensions` | `[16项]` | 欲望维度列表 (生理/安全/归属/尊重/自我实现/自我超越/感知/...) |
+| `emotion_trigger_threshold` | `0.3` | 情感触发阈值 |
+| `value_system_weights` | `{Dict}` | 价值体系权重 (各维度权重分配) |
+| `drive_chain_max_depth` | `5` | 驱动链最大深度 |
 
-包含感知、工作、短期、长期、情绪等多层记忆系统的详细配置。
+### AgentConfig — 四智能体配置 (v1.3.0 新增)
 
-### ChaosConfig - 混沌系统配置
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `dialogue` | SingleAgentConfig | DialogueAgent配置 (token_budget/temperature/mode) |
+| `novel` | SingleAgentConfig | NovelistAgent配置 (默认INCREMENTAL模式) |
+| `critic` | SingleAgentConfig | CriticAgent配置 (默认FULL模式) |
+| `atmosphere` | SingleAgentConfig | AtmosphereAgent配置 (默认LIGHT模式) |
 
-::: luqi_engine.core.config.ChaosConfig
-    options:
-      show_root_heading: true
+**SingleAgentConfig 子参数**:
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `token_budget` | int | Token预算 |
+| `temperature` | float | 生成温度 |
+| `mode` | str | 运行模式 (DEFAULT/FULL/LIGHT/INCREMENTAL等) |
 
-Lorenz混沌吸引子参数，用于情感引擎的非线性动力学模拟。
+### NarrativeDocConfig — 叙事文档配置 (v1.3.0 新增)
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `quality_level` | `"standard"` | 质量等级 |
+| `max_facts` | `int` | 最大事实数 |
+| `max_chapter_depth` | `int` | 最大章节深度 |
+| `max_scene_predictions` | `int` | 最大场景预测数 |
+| `auto_save_interval_seconds` | `float` | 自动保存间隔(秒) |
+
+### PaceConfig — 节奏控制配置 (v1.3.0 新增)
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `fast_threshold` | `float` | 快节奏阈值 |
+| `slow_threshold` | `float` | 慢节奏阈值 |
+| `auto_mode_timeout` | `float` | 自动模式超时(秒) |
+| `pace_window_size` | `int` | 节奏窗口大小 |
+
+### TrainingConfig — 训练数据配置 (v1.3.0 新增)
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `storage_path` | `str` | 存储路径 |
+| `per_character_isolation` | `True` | 按角色隔离存储 |
+| `quality_threshold` | `float` | 质量阈值 |
+| `auto_collect` | `True` | 自动采集开关 |
+| `max_samples_per_character` | `int` | 每角色最大样本数 |
 
 ## 配置加载方式
-
-### 方式1: 代码直接创建
 
 ```python
 from luqi_engine.core.config import EngineConfig
 
+# 方式1: 代码创建
 config = EngineConfig()
 config.llm.model = "gpt-4o-mini"
-config.narrative.elasticity_coefficient = 60.0
-```
 
-### 方式2: 从字典加载
+# 方式2: 字典加载
+config = EngineConfig.from_dict({"llm": {"model": "gpt-4o-mini"}})
 
-```python
-data = {
-    "llm": {
-        "model": "gpt-4o-mini",
-        "temperature": 0.8,
-    },
-    "narrative": {
-        "max_branch_depth": 5,
-    }
-}
-config = EngineConfig.from_dict(data)
-```
-
-### 方式3: 从YAML文件加载 (Demo中使用)
-
-```python
+# 方式3: YAML加载
 import yaml
+with open("luqi_engine.yaml") as f:
+    config = EngineConfig.from_dict(yaml.safe_load(f))
 
-with open("luqi_engine.yaml", "r") as f:
-    data = yaml.safe_load(f)
-
-config = EngineConfig.from_dict(data)
+# 验证
+errors = config.validate()
+if errors:
+    for e in errors:
+        print(f"配置错误: {e}")
 ```
 
-### 方式4: 环境变量覆盖
-
-部分敏感配置可通过环境变量设置：
-
-```bash
-export LLM_API_KEY="sk-xxx"
-export OPENAI_BASE_URL="https://your-endpoint/v1"
-```
-
-## 移动端优化配置示例
-
-```python
-from luqi_engine.core.config import (
-    EngineConfig, MobileConfig, SceneConfig,
-    CharacterConfig, PerformanceConfig
-)
-
-mobile_config = EngineConfig()
-mobile_config.mobile = MobileConfig(
-    target_device="snapdragon_695",
-    max_memory_mb=2048.0,
-)
-mobile_config.scene = SceneConfig(max_elements_per_scene=200)
-mobile_config.character = CharacterConfig(short_term_memory_capacity=50)
-mobile_config.performance = PerformanceConfig(target_fps=24, async_task_concurrency=4)
-```
-
-## 完整配置示例
+## 完整YAML示例
 
 ```yaml
 engine:
@@ -248,27 +202,23 @@ engine:
 
 llm:
   sdk_type: openai
-  model: gpt-4o-mini
+  model: deepseek-chat
   temperature: 0.7
-  max_tokens: 2048
+  max_tokens: 4096
+
+local_model:
+  enable_bge_semantic: false
+  max_text_length: 5000
 
 narrative:
-  max_branch_depth: 8
-  elasticity_coefficient: 55.0
-  branch_merge_enabled: true
+  max_branch_depth: 10
+  elasticity_coefficient: 50.0
 
-character:
-  short_term_memory_capacity: 100
-  personality_adaptation_rate: 0.02
+game_theory:
+  belief_learning_rate: 0.3
+  mixed_strategy_iterations: 100
 
-scene:
-  max_elements_per_scene: 300
-
-interaction:
-  dialogue_max_rounds: 20
-  social_rules_enabled: true
-
-local_llm:
-  local_llm_enabled: false
-  local_llm_model_path: ""
+stress_test:
+  max_rounds: 5000
+  narrative_arc_enabled: true
 ```

@@ -1,5 +1,3 @@
-"""输出组装器测试"""
-
 from typing import Optional
 
 import pytest

@@ -370,7 +370,12 @@ class BGESemanticEngine:
             sim = self.similarity(new_vec, existing_vec)
 
             is_duplicate = sim >= dup_threshold
-            overlap_type = "duplicate" if is_duplicate else ("near_duplicate" if sim >= near_dup_threshold else "")
+            if is_duplicate:
+                overlap_type = "duplicate"
+            elif sim >= near_dup_threshold:
+                overlap_type = "near_duplicate"
+            else:
+                overlap_type = ""
 
             if sim >= near_dup_threshold:
                 matches.append(RepetitionMatch(

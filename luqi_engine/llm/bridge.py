@@ -5,6 +5,7 @@ LLM桥接器 - 双SDK适配器的中央协调器
 
 from __future__ import annotations
 
+import logging
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from luqi_engine.core.config import LLMConfig
@@ -62,6 +63,7 @@ class LLMBridge(ILLMBridge):
         self._prompt_builder = PromptBuilder()
         self._response_parser = ResponseParser()
         self._fallback = fallback or LLMFallback()
+        self._logger = logging.getLogger(__name__)
 
     async def chat(self, request: LLMRequest) -> LLMResponse:
         """
@@ -76,7 +78,8 @@ class LLMBridge(ILLMBridge):
             response = await self._adapter.chat(optimized_request)
             self._fallback.report_success()
             return response
-        except Exception:
+        except Exception as exc:
+            self._logger.error("LLM chat调用失败: %s", exc, exc_info=True)
             self._fallback.report_failure()
             if self._fallback.current_level != DegradationLevel.NORMAL:
                 return self._fallback.get_fallback_response()
@@ -98,7 +101,8 @@ class LLMBridge(ILLMBridge):
             async for chunk in self._adapter.chat_stream(optimized_request):
                 yield chunk
             self._fallback.report_success()
-        except Exception:
+        except Exception as exc:
+            self._logger.error("LLM chat_stream调用失败: %s", exc, exc_info=True)
             self._fallback.report_failure()
             yield self._fallback.get_fallback_stream_chunk()
 

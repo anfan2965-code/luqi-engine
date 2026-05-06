@@ -38,7 +38,7 @@ _EMOTION_PAD_MAP: Dict[str, Tuple[float, float, float]] = {
     SevenEmotionType.DESIRE.value: _DESIRE_PAD_VECTOR,
 }
 
-_SURPRISE_PAD_VECTOR: Tuple[float, float, float] = (0.2, 0.6, -0.1)
+_SURPRISE_PAD_VECTOR: Tuple[float, float, float] = (0.1, 0.7, -0.1)
 _CURIOSITY_PAD_VECTOR: Tuple[float, float, float] = (0.2, 0.3, -0.1)
 
 _ENGLISH_EMOTION_PAD_MAP: Dict[str, Tuple[float, float, float]] = {

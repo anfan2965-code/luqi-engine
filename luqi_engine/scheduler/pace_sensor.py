@@ -1,5 +1,3 @@
-"""节奏感知器 - 感知对话节奏"""
-
 from __future__ import annotations
 
 import logging

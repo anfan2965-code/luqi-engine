@@ -1,5 +1,3 @@
-"""核心类型测试"""
-
 import math
 import pytest
 from luqi_engine.core.types import (

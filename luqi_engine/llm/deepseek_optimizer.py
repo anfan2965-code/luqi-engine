@@ -11,16 +11,16 @@ from typing import Any, Dict, List, Optional
 
 from luqi_engine.core.config import LLMConfig
 
-_COT_THINK_OPEN: str = "<think}"
-_COT_THINK_CLOSE: str = "</think}>"
-_COT_RESPONSE_OPEN: str = "<response}"
-_COT_RESPONSE_CLOSE: str = "</response}>"
-_FORMAT_ACTION_OPEN: str = "<action}"
-_FORMAT_ACTION_CLOSE: str = "</action}>"
-_FORMAT_DIALOGUE_OPEN: str = "<dialogue}"
-_FORMAT_DIALOGUE_CLOSE: str = "</dialogue}>"
-_FORMAT_EMOTION_OPEN: str = "<emotion}"
-_FORMAT_EMOTION_CLOSE: str = "</emotion}>"
+_COT_THINK_OPEN: str = "<think>"
+_COT_THINK_CLOSE: str = "</think>"
+_COT_RESPONSE_OPEN: str = "<response>"
+_COT_RESPONSE_CLOSE: str = "</response>"
+_FORMAT_ACTION_OPEN: str = "<action>"
+_FORMAT_ACTION_CLOSE: str = "</action>"
+_FORMAT_DIALOGUE_OPEN: str = "<dialogue>"
+_FORMAT_DIALOGUE_CLOSE: str = "</dialogue>"
+_FORMAT_EMOTION_OPEN: str = "<emotion>"
+_FORMAT_EMOTION_CLOSE: str = "</emotion>"
 
 _TOKEN_BUDGET_SYSTEM_WEIGHT: float = 0.15
 _TOKEN_BUDGET_MEMORY_WEIGHT: float = 0.35

@@ -1,5 +1,3 @@
-"""本地模型管线测试"""
-
 import asyncio
 import pytest
 from luqi_engine.local_model.pipeline import LocalModelPipeline

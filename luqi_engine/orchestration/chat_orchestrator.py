@@ -303,10 +303,7 @@ class ChatOrchestrator:
         try:
             atmosphere_context = {
                 "scene_name": self._narrative_doc.current_scene if self._narrative_doc else "",
-                "dominant_emotion": (
-                    canonical_ir.emotion_delta.pleasure
-                    if canonical_ir.emotion_delta else _DEFAULT_DOMINANT_EMOTION
-                ),
+                "dominant_emotion": _DEFAULT_DOMINANT_EMOTION,
                 "emotion_intensity": (
                     abs(canonical_ir.emotion_delta.arousal)
                     if canonical_ir.emotion_delta else _DEFAULT_EMOTION_INTENSITY
@@ -481,12 +478,19 @@ class ChatOrchestrator:
 
     @staticmethod
     def _update_character_emotion(target_char: Any, canonical_ir: CanonicalIR) -> None:
-        """更新角色情感状态"""
+        """更新角色情感状态（通过PADState.update确保范围钳制）"""
         try:
             if hasattr(target_char, 'emotion') and canonical_ir.emotion_delta:
-                target_char.emotion.pleasure += canonical_ir.emotion_delta.pleasure
-                target_char.emotion.arousal += canonical_ir.emotion_delta.arousal
-                target_char.emotion.dominance += canonical_ir.emotion_delta.dominance
+                if hasattr(target_char.emotion, 'update'):
+                    target_char.emotion = target_char.emotion.update(
+                        canonical_ir.emotion_delta.pleasure,
+                        canonical_ir.emotion_delta.arousal,
+                        canonical_ir.emotion_delta.dominance,
+                    )
+                else:
+                    target_char.emotion.pleasure += canonical_ir.emotion_delta.pleasure
+                    target_char.emotion.arousal += canonical_ir.emotion_delta.arousal
+                    target_char.emotion.dominance += canonical_ir.emotion_delta.dominance
         except Exception as exc:
             logging.getLogger(__name__).warning("角色情感更新失败: %s", exc)
 

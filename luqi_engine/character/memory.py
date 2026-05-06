@@ -9,7 +9,7 @@ import math
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from luqi_engine.core.config import CharacterConfig
@@ -38,19 +38,14 @@ _IMPORTANCE_BOOST_FACTOR: float = 0.5
 _ENTRY_ID_HEX_LENGTH: int = 12
 
 
-class MemoryType(Enum):
-    SHORT_TERM = auto()
-    LONG_TERM = auto()
-    EMOTIONAL = auto()
+class MemoryType(str, Enum):
+    SHORT_TERM = "short_term"
+    LONG_TERM = "long_term"
+    EMOTIONAL = "emotional"
 
     @property
     def storage_key(self) -> str:
-        mapping = {
-            MemoryType.SHORT_TERM: _MEMORY_TYPE_SHORT_TERM,
-            MemoryType.LONG_TERM: _MEMORY_TYPE_LONG_TERM,
-            MemoryType.EMOTIONAL: _MEMORY_TYPE_EMOTIONAL,
-        }
-        return mapping[self]
+        return self.value
 
 
 @dataclass

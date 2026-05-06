@@ -16,8 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from luqi_engine.llm.state_renderer import StateRenderer
 from luqi_engine.llm.dialogue_modes import DialogueMode
-
-_LOCAL_LLM_OUTPUT_REQUIREMENTS: str = "第一人称回复，保持角色风格，回复长度50-200字"
+from luqi_engine.core.constants import _LOCAL_LLM_OUTPUT_REQUIREMENTS
 
 _OCEAN_TRAIT_KEYS: tuple = (
     "openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"
@@ -32,14 +31,8 @@ class CharacterExtractor:
     def __init__(self, state_renderer: Optional[StateRenderer] = None) -> None:
         self._state_renderer = state_renderer
 
-    def set_state_renderer(self, state_renderer: Optional[StateRenderer]) -> None:
-        """
-        设置状态渲染器
-        
-        Args:
-            state_renderer: 状态渲染器实例
-        """
-        self._state_renderer = state_renderer
+    def set_state_renderer(self, renderer: Optional[StateRenderer]) -> None:
+        self._state_renderer = renderer
 
     def extract_personality(self, character: Any) -> Dict[str, float]:
         """
@@ -136,7 +129,8 @@ class CharacterExtractor:
         emotion_pad = self.extract_emotion_pad(character)
         dominant_emotion = "neutral"
         if hasattr(character, 'emotion') and hasattr(character.emotion, 'dominant_emotion'):
-            dominant_emotion = character.emotion.dominant_emotion
+            de = character.emotion.dominant_emotion
+            dominant_emotion = de() if callable(de) else de
         mode_value = mode.value if hasattr(mode, 'value') else str(mode)
         return PromptContext(
             character_name=getattr(character, 'name', ''),

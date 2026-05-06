@@ -6,6 +6,7 @@ Atmosphere降级路径：FULL → TEMPLATE_PCG → TEMPLATE_ONLY → MINIMAL_SKI
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -80,6 +81,7 @@ class LLMFallback:
         self._state_renderer: Optional[Any] = None
         self._recovery_successes: int = 0
         self._last_recovery_check: float = 0.0
+        self._logger = logging.getLogger(__name__)
 
         thresholds = config.fallback_thresholds if config else {
             "degraded": 3,
@@ -175,7 +177,8 @@ class LLMFallback:
             return self.get_fallback_response()
         try:
             return await self._local_llm_adapter.chat(request)
-        except Exception:
+        except Exception as exc:
+            self._logger.warning("LocalLLMAdapter.chat失败，回退到降级响应: %s", exc)
             return self.get_fallback_response()
 
     async def get_local_llm_stream(self, request: LLMRequest):
@@ -188,7 +191,8 @@ class LLMFallback:
         try:
             async for chunk in self._local_llm_adapter.chat_stream(request):
                 yield chunk
-        except Exception:
+        except Exception as exc:
+            self._logger.warning("LocalLLMAdapter.chat_stream失败，回退到降级响应: %s", exc)
             yield self.get_fallback_stream_chunk()
 
     def should_attempt_request(self) -> bool:

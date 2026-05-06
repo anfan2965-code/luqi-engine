@@ -1,17 +1,15 @@
-"""批评智能体测试"""
-
 import asyncio
 import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from luqi_engine.agents.critic_agent import CriticAgent
-from luqi_engine.core.constants import CriticMode
+from luqi_engine.core.constants import CriticMode, CriticVerdictType
 from luqi_engine.core.types import CriticVerdict, LLMResponse, SDKType
 
 
 _MOCK_CRITIC_VERDICT_JSON = json.dumps({
-    "verdict": "revise",
+    "verdict": "minor_fix",
     "checks": [
         {"dimension": "consistency", "severity": "warning", "score": 0.6, "detail": "情感变化幅度过大"},
         {"dimension": "emotion_plausibility", "severity": "pass", "score": 0.9, "detail": "情感合理性良好"},
@@ -62,7 +60,7 @@ class TestCriticAgentRunFull:
 
         result = asyncio.run(agent.run(context, bridge, mode=CriticMode.FULL))
         assert isinstance(result, CriticVerdict)
-        assert result.verdict == "revise"
+        assert result.verdict == CriticVerdictType.MINOR_FIX
         assert len(result.checks) == 6
         assert result.overall_confidence == pytest.approx(0.75)
 

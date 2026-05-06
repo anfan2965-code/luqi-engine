@@ -1,5 +1,3 @@
-"""中间件模块 - 实现请求/响应中间件管道"""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

@@ -121,25 +121,13 @@ class EventBus:
         async_handlers = list(self._async_subscribers.get(event.event_type, []))
         async_handlers.extend(self._wildcard_async)
 
-        # 并行执行所有异步处理器，提高性能
-        if async_handlers:
-            tasks = []
-            for handler in async_handlers:
-                try:
-                    result = handler(event)
-                    if asyncio.iscoroutine(result):
-                        tasks.append(result)
-                    # 如果不是协程，说明是同步函数，已经执行完毕
-                except Exception as exc:
-                    _logger.error("Event handler %s raised exception: %s", handler, exc, exc_info=True)
-            
-            # 并行等待所有异步任务
-            if tasks:
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                for i, result in enumerate(results):
-                    if isinstance(result, Exception):
-                        _logger.error("Async event handler %s raised exception: %s", 
-                                    async_handlers[i], result, exc_info=True)
+        for handler in async_handlers:
+            try:
+                result = handler(event)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception as exc:
+                _logger.error("Event handler %s raised exception: %s", handler, exc, exc_info=True)
 
     def get_history(
         self,

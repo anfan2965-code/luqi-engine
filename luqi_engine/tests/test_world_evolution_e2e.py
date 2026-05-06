@@ -1,5 +1,3 @@
-"""世界演化端到端测试"""
-
 import asyncio
 import pytest
 from luqi_engine.worldview.renderer import WorldViewRenderer

@@ -1,5 +1,3 @@
-"""中间件测试"""
-
 import pytest
 from luqi_engine.core.middleware import MiddlewareBase, LoggingMiddleware, MiddlewarePipeline
 

@@ -14,6 +14,7 @@ from luqi_engine.core.constants import (
     NovelMode,
     MemoryType,
     AtmosphereMode,
+    CriticMode,
     OCEAN_HIGH_THRESHOLD,
     OCEAN_LOW_THRESHOLD,
     PAD_POSITIVE_THRESHOLD,
@@ -396,13 +397,13 @@ class PromptBuilder:
         """
         sections: List[str] = []
 
-        mode = context.get("critic_mode", AtmosphereMode.LIGHT)
+        mode = context.get("critic_mode", CriticMode.LIGHT)
         mode_instruction_map: Dict[str, str] = {
-            "full": "请进行全面审查，覆盖一致性、情感合理性、叙事对齐、角色忠实度、动作合理性、语气适当性。",
-            AtmosphereMode.LIGHT: "请进行轻量审查，仅检查一致性和情感合理性。",
+            CriticMode.FULL: "请进行全面审查，覆盖一致性、情感合理性、叙事对齐、角色忠实度、动作合理性、语气适当性。",
+            CriticMode.LIGHT: "请进行轻量审查，仅检查一致性和情感合理性。",
         }
         sections.append(
-            f"【审查模式】{mode_instruction_map.get(mode, mode_instruction_map[AtmosphereMode.LIGHT])}"
+            f"【审查模式】{mode_instruction_map.get(mode, mode_instruction_map[CriticMode.LIGHT])}"
         )
 
         character_state = context.get("character_state")

@@ -1,5 +1,3 @@
-"""节奏感知器测试"""
-
 import pytest
 
 from luqi_engine.scheduler.pace_sensor import PaceSensor

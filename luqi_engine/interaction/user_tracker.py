@@ -1,5 +1,3 @@
-"""用户追踪器 - 追踪用户交互状态"""
-
 from __future__ import annotations
 
 from typing import Any, Dict, Set

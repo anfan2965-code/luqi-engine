@@ -42,24 +42,13 @@ from luqi_engine.core.constants import (
 
 class ConfigMixin:
     """配置类通用序列化mixin，消除to_dict/from_dict重复代码"""
-    
-    # 敏感字段列表，序列化时会被脱敏
-    _SENSITIVE_FIELDS = {"api_key", "secret_key", "password", "token"}
 
-    def to_dict(self, redact_sensitive: bool = True) -> dict:
+    def to_dict(self) -> dict:
         result = {}
         for field_name in self.__dataclass_fields__:
             value = getattr(self, field_name)
-            # 敏感字段脱敏处理
-            if redact_sensitive and field_name in self._SENSITIVE_FIELDS:
-                if value:  # 非空才脱敏
-                    result[field_name] = "***REDACTED***"
-                else:
-                    result[field_name] = value
-                continue
-            
             if hasattr(value, 'to_dict') and callable(value.to_dict):
-                result[field_name] = value.to_dict(redact_sensitive=redact_sensitive)
+                result[field_name] = value.to_dict()
             elif isinstance(value, tuple):
                 result[field_name] = list(value)
             elif isinstance(value, Enum):
@@ -278,9 +267,6 @@ class LocalLLMConfig(ConfigMixin):
     local_llm_max_tokens: int = 512
     local_llm_temperature: float = 0.7
     local_llm_top_p: float = 0.9
-    # 安全选项：是否信任远程代码（仅在可信模型源时启用）
-    # 默认禁用，防止远程代码执行攻击
-    local_llm_trust_remote_code: bool = False
 
 
 @dataclass
@@ -379,41 +365,6 @@ class EngineConfig(ConfigMixin):
     training: TrainingConfig = field(default_factory=TrainingConfig)
     seed: Optional[int] = None
     debug_mode: bool = False
-
-    def __post_init__(self) -> None:
-        """配置验证：检查关键参数的有效性"""
-        # 性能配置验证
-        if self.performance.target_fps <= 0 or self.performance.target_fps > 240:
-            raise ValueError(f"target_fps must be between 1 and 240, got {self.performance.target_fps}")
-        if self.performance.max_cpu_percent <= 0 or self.performance.max_cpu_percent > 100:
-            raise ValueError(f"max_cpu_percent must be between 0 and 100, got {self.performance.max_cpu_percent}")
-        if self.performance.max_memory_mb <= 0:
-            raise ValueError(f"max_memory_mb must be positive, got {self.performance.max_memory_mb}")
-        
-        # LLM配置验证
-        if self.llm.temperature < 0 or self.llm.temperature > 2.0:
-            raise ValueError(f"LLM temperature must be between 0 and 2.0, got {self.llm.temperature}")
-        if self.llm.max_tokens <= 0:
-            raise ValueError(f"LLM max_tokens must be positive, got {self.llm.max_tokens}")
-        if self.llm.timeout <= 0:
-            raise ValueError(f"LLM timeout must be positive, got {self.llm.timeout}")
-        
-        # 本地LLM配置验证
-        if self.local_llm.local_llm_enabled:
-            if not self.local_llm.local_llm_model_path:
-                raise ValueError("local_llm_model_path is required when local_llm is enabled")
-            if self.local_llm.local_llm_n_ctx <= 0:
-                raise ValueError(f"local_llm_n_ctx must be positive, got {self.local_llm.local_llm_n_ctx}")
-            if self.local_llm.local_llm_max_tokens <= 0:
-                raise ValueError(f"local_llm_max_tokens must be positive, got {self.local_llm.local_llm_max_tokens}")
-        
-        # 角色配置验证
-        if self.character.personality_score_range[0] >= self.character.personality_score_range[1]:
-            raise ValueError(f"personality_score_range min must be less than max, got {self.character.personality_score_range}")
-        if self.character.short_term_memory_capacity <= 0:
-            raise ValueError(f"short_term_memory_capacity must be positive, got {self.character.short_term_memory_capacity}")
-        if self.character.long_term_memory_capacity <= 0:
-            raise ValueError(f"long_term_memory_capacity must be positive, got {self.character.long_term_memory_capacity}")
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EngineConfig:

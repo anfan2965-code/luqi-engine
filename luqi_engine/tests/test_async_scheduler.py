@@ -1,5 +1,3 @@
-"""异步调度器测试"""
-
 import pytest
 
 from luqi_engine.scheduler.async_scheduler import AsyncTaskScheduler, EngineState, _TransitionError

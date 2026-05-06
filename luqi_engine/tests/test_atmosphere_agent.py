@@ -1,5 +1,3 @@
-"""氛围智能体测试"""
-
 import asyncio
 import json
 import pytest
@@ -7,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from luqi_engine.agents.atmosphere_agent import AtmosphereAgent
 from luqi_engine.core.types import AtmosphereOutput, LLMResponse, SDKType
+from luqi_engine.core.constants import ToneType
 
 
 _MOCK_ATMOSPHERE_OUTPUT_JSON = json.dumps({
@@ -77,7 +76,7 @@ class TestAtmosphereAgentRunLight:
             "narration": {"transition": "阳光洒入窗内"},
             "stage_directions": [],
             "mood_declaration": {
-                "dominant_emotion": "joy",
+                "dominant_emotion": "casual",
                 "intensity": 0.6,
                 "color_palette": [],
                 "pacing_hint": "normal",
@@ -93,7 +92,7 @@ class TestAtmosphereAgentRunLight:
         assert isinstance(result, AtmosphereOutput)
         assert result.mode == "light"
         assert result.environment.visual == "明亮的房间"
-        assert result.mood_declaration.dominant_emotion == "joy"
+        assert result.mood_declaration.dominant_emotion == ToneType.CASUAL
 
 
 class TestAtmosphereAgentRunFull:

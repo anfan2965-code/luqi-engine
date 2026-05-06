@@ -5,13 +5,10 @@
 
 from __future__ import annotations
 
-import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
-_logger = logging.getLogger(__name__)
+from typing import Any, Dict, List, Optional, Tuple
 
 from luqi_engine.core.types import EntityId, WorldState, ActionResult, generate_entity_id
 from luqi_engine.core.config import CharacterConfig
@@ -19,8 +16,8 @@ from luqi_engine.character.personality import OceanPersonality
 from luqi_engine.character.emotion import PADState, ExtendedPAD, ocean_to_pad_baseline
 from luqi_engine.character.desire import DesireEngine
 from luqi_engine.character.memory import MemoryStore, MemoryType, MemoryEntry
-from luqi_engine.character.goap import GOAPPlanner, GOAPAction, GOAPWorldState, GOAPGoalSelector
-from luqi_engine.character.utility import UtilityBasedAI, CEMPlanner, BehaviorOption, DefaultBehaviors
+from luqi_engine.character.goap import GOAPPlanner, GOAPAction, GOAPWorldState
+from luqi_engine.character.utility import UtilityBasedAI, CEMPlanner, BehaviorOption
 from luqi_engine.character.social_perception import SocialPerception
 
 _URGENCY_EXPONENTIAL: str = "exponential"
@@ -38,57 +35,6 @@ _CONSISTENCY_THRESHOLD: float = 0.95
 _CONSISTENCY_WEIGHT_PERSONALITY: float = 0.4
 _CONSISTENCY_WEIGHT_EMOTION: float = 0.3
 _CONSISTENCY_WEIGHT_MEMORY: float = 0.3
-
-_MOTIVE_SATISFACTION_HIGH: float = 0.7
-_URGENCY_SIGMOID_K: float = 10.0
-_URGENCY_SIGMOID_MIDPOINT: float = 0.5
-_MOTIVE_SATISFACTION_CLAMP_MIN: float = 0.0
-_MOTIVE_SATISFACTION_CLAMP_MAX: float = 1.0
-_MOTIVE_STRENGTH_CLAMP_MIN: float = 0.0
-_MOTIVE_STRENGTH_CLAMP_MAX: float = 1.0
-_DANGER_LEVEL_THRESHOLD: float = 0.7
-
-_PERSONALITY_INFLUENCE_WEIGHTS: Dict[str, float] = {"social": 0.5, "explore": 0.3, "rest": 0.2}
-_DECISION_FINAL_SCORE_SCALE: float = 0.5
-
-_GOAP_MOTIVE_SATISFACTION_THRESHOLD: float = 0.7
-_GOAP_THREAT_PLEASURE_THRESHOLD: float = -0.3
-_GOAP_SUPPRESSED_AROUSAL_THRESHOLD: float = -0.2
-_GOAP_DISTRESSED_PLEASURE_THRESHOLD: float = -0.2
-
-_UTILITY_COST_FACTOR_BASE: float = 1.0
-
-_EMOTION_MODIFIER_P_WEIGHT: float = 0.4
-_EMOTION_MODIFIER_A_WEIGHT: float = 0.3
-_EMOTION_MODIFIER_D_WEIGHT: float = 0.3
-_EMOTION_NORMALIZATION_SCALE: float = 2.0
-_EMOTION_NORMALIZATION_OFFSET: float = 1.0
-
-_OCEAN_SCORE_SCALE: float = 100.0
-_OCEAN_SCORE_DEFAULT: float = 50.0
-
-_HP_RATIO_LOW_THRESHOLD: float = 0.3
-_HP_RATIO_DEFAULT: float = 1.0
-_PLEASURE_LOW_THRESHOLD: float = -0.5
-_AROUSAL_HIGH_THRESHOLD: float = 0.5
-_EMOTIONAL_VALENCE_LOW_THRESHOLD: float = -0.5
-
-_PERSONALITY_CONSISTENCY_LOW_OPENNESS_RISKY: float = 0.6
-_PERSONALITY_CONSISTENCY_LOW_EXTRAVERSION_SOCIAL: float = 0.7
-_PERSONALITY_CONSISTENCY_HIGH_CONSCIENTIOUSNESS_CAREFUL: float = 1.0
-_PERSONALITY_CONSISTENCY_DEFAULT: float = 0.9
-_OCEAN_LOW_SCORE_THRESHOLD: float = 30.0
-_OCEAN_HIGH_SCORE_THRESHOLD: float = 70.0
-
-_EMOTION_CONSISTENCY_LOW_PLEASURE_FRIENDLY: float = 0.6
-_EMOTION_CONSISTENCY_HIGH_AROUSAL_PASSIVE: float = 0.7
-_EMOTION_CONSISTENCY_DEFAULT: float = 0.9
-
-_MEMORY_CONSISTENCY_NEGATIVE_VALENCE_HELPFUL: float = 0.6
-_MEMORY_CONSISTENCY_DEFAULT: float = 0.9
-_MEMORY_NEGATIVE_VALENCE_THRESHOLD: float = -0.5
-
-_NEARBY_ALLIES_THRESHOLD: int = 3
 
 
 @dataclass
@@ -125,12 +71,13 @@ class MotivationEngine:
         计算动机驱动力强度
         使用非线性紧迫性曲线
         """
-        deprivation = _MOTIVE_SATISFACTION_CLAMP_MAX - motive.current_satisfaction
+        deprivation = 1.0 - motive.current_satisfaction
 
         if motive.urgency_curve == _URGENCY_EXPONENTIAL:
             urgency = deprivation ** 2.0
         elif motive.urgency_curve == _URGENCY_SIGMOID:
-            urgency = _UTILITY_COST_FACTOR_BASE / (_UTILITY_COST_FACTOR_BASE + math.exp(-_URGENCY_SIGMOID_K * (deprivation - _URGENCY_SIGMOID_MIDPOINT)))
+            k = 10.0
+            urgency = 1.0 / (1.0 + math.exp(-k * (deprivation - 0.5)))
         else:
             urgency = deprivation
 
@@ -138,7 +85,7 @@ class MotivationEngine:
         context_mod = self._context_modifier(motive, context or {})
 
         strength = motive.base_intensity * urgency * layer_weight * context_mod
-        return max(_MOTIVE_STRENGTH_CLAMP_MIN, min(_MOTIVE_STRENGTH_CLAMP_MAX, strength))
+        return max(0.0, min(1.0, strength))
 
     def get_prioritized_motives(
         self, context: Optional[Dict[str, Any]] = None
@@ -173,9 +120,9 @@ class MotivationEngine:
         motive: Motive, context: Dict[str, Any]
     ) -> float:
         modifier = 1.0
-        if motive.layer == 1 and context.get("danger_level", 0.0) > _DANGER_LEVEL_THRESHOLD:
+        if motive.layer == 1 and context.get("danger_level", 0.0) > 0.7:
             modifier *= _MOTIVE_CONTEXT_DANGER_MODIFIER
-        if motive.layer == 2 and context.get("nearby_allies", 0) > _NEARBY_ALLIES_THRESHOLD:
+        if motive.layer == 2 and context.get("nearby_allies", 0) > 3:
             modifier *= _MOTIVE_SOCIAL_MODIFIER
         return modifier
 
@@ -213,7 +160,7 @@ class CharacterEntity:
         self.personality = personality or OceanPersonality()
         self.emotion = emotion or self._derive_pad_from_personality()
         self.extended_emotion = extended_emotion or ExtendedPAD(pad_state=self.emotion)
-        self.desire_engine = desire_engine or DesireEngine()
+        self.desire_engine = desire_engine or DesireEngine(self.entity_id)
         self.memory = memory or MemoryStore(config=self._config)
         self.motivation = motivation or MotivationEngine()
         self.goap_planner = goap_planner or GOAPPlanner(actions=[])
@@ -225,74 +172,64 @@ class CharacterEntity:
         self._current_plan: Optional[List[GOAPAction]] = None
         self._position: Optional[Dict[str, float]] = None
         self._state: Dict[str, Any] = {}
-        self._in_conversation: bool = False
 
     async def decide(
         self,
         context: Dict[str, Any],
         available_actions: Optional[List[GOAPAction]] = None,
         available_behaviors: Optional[List[BehaviorOption]] = None,
-    ) -> Dict[str, Any]:
-        """多层级决策：动机→欲望→GOAP→IAUS→CEM→性格/情感修正"""
+    ) -> Optional[GOAPAction]:
+        """
+        完整决策循环
+        感知→动机评估→GOAP规划→IAUS评分→人格/情感修饰→CEM扰动→执行
+        """
         prioritized = self.motivation.get_prioritized_motives(context)
-        if not prioritized:
-            return {
-                "dominant_desire": "",
-                "goap_plan": [],
-                "selected_action": None,
-                "utility_scores": [],
-            }
 
-        primary_goal_id = prioritized[0][0]
-        self._current_goal = primary_goal_id
+        primary_goal_id = ""
+        chosen_action = None
+        action_utilities: Dict[GOAPAction, float] = {}
+
+        if prioritized:
+            primary_goal_id = prioritized[0][0]
+            self._current_goal = primary_goal_id
 
         if available_actions:
-            for action in available_actions:
-                if action.name not in self.goap_planner.available_actions:
-                    self.goap_planner.add_action(action)
+            self.goap_planner = GOAPPlanner(actions=available_actions)
 
         if available_behaviors:
-            for behavior in available_behaviors:
-                self.utility_ai.add_behavior(behavior)
+            self.utility_ai = UtilityBasedAI(behaviors=available_behaviors)
 
-        drive_result = await self.desire_engine.compute_drive_chain(self.entity_id, context)
-        dominant_desire = drive_result.get("dominant_desire", "")
+        if self.goap_planner.actions and primary_goal_id:
+            goal_state = self._translate_motive_to_goal(primary_goal_id)
+            current_state = self._get_current_world_state()
+            self._current_plan = self.goap_planner.plan(current_state, goal_state)
 
-        goal_selector = GOAPGoalSelector(rng=self._rng_if_available())
-        goal_state = goal_selector.select_goal(
-            pad_state={"pleasure": self.emotion.pleasure, "arousal": self.emotion.arousal, "dominance": self.emotion.dominance},
-            ocean_state=self.personality.to_dict() if hasattr(self.personality, "to_dict") else None,
-        )
-        current_state = self._get_current_world_state()
-        self._current_plan = self.goap_planner.plan(current_state, goal_state)
+        if self._current_plan and len(self._current_plan) > 0:
+            next_action = self._current_plan[0]
 
-        goap_plan_names = [a.name for a in (self._current_plan or [])]
+            base_score = 0.5
+            if self.utility_ai.behaviors:
+                base_score = self._evaluate_action_utility(next_action, context)
 
-        if not self.utility_ai.behavior_count:
-            for behavior in DefaultBehaviors.create_all():
-                self.utility_ai.add_behavior(behavior)
+            personality_mod = self.personality.influence_decision(
+                base_score, self._classify_action_type(next_action)
+            )
 
-        self._bind_consideration_inputs()
-        utility_scores = self.utility_ai.evaluate_all()
+            emotion_mod = self._emotion_modifier()
 
-        selected_behavior = self.cem_planner.select()
+            final_score = base_score * personality_mod * emotion_mod
 
-        if selected_behavior and selected_behavior.name in ("socialize", "express"):
-            self._in_conversation = True
-
-        personality_weights = self.personality.influence_decision(
-            _PERSONALITY_INFLUENCE_WEIGHTS
-        )
-        personality_mod = sum(personality_weights.values()) / max(len(personality_weights), 1)
-        emotion_mod = self._emotion_modifier()
-        final_score = _DECISION_FINAL_SCORE_SCALE * personality_mod * emotion_mod
+            action_utilities = {next_action: final_score}
+            chosen_action = self.cem_planner.select_action_with_entropy(
+                action_utilities,
+                temperature=self._adaptive_temperature(context),
+            )
 
         return {
-            "dominant_desire": dominant_desire,
-            "goap_plan": goap_plan_names,
-            "selected_action": selected_behavior.name if selected_behavior else "",
-            "utility_scores": utility_scores,
-            "final_score": final_score,
+            "dominant_desire": primary_goal_id,
+            "selected_action": chosen_action,
+            "goap_plan": list(self._current_plan) if self._current_plan else [],
+            "utility_scores": {a.name: s for a, s in action_utilities.items()},
         }
 
     def validate_behavior_consistency(
@@ -366,6 +303,9 @@ class CharacterEntity:
             name=data.get("name", ""),
         )
 
+    def _translate_motive_to_goal(self, motive_id: str) -> GOAPWorldState:
+        return GOAPWorldState(data={f"motive_{motive_id}_satisfied": True})
+
     def _derive_pad_from_personality(self) -> PADState:
         ocean_scores: Dict[str, float] = {}
         for trait in ("openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"):
@@ -373,84 +313,72 @@ class CharacterEntity:
         return ocean_to_pad_baseline(ocean_scores)
 
     def _get_current_world_state(self) -> GOAPWorldState:
-        """从PAD/OCEAN/动机状态推导GOAP世界事实"""
         facts: Dict[str, bool] = {}
         for mid, motive in self.motivation.motives.items():
-            facts[f"motive_{mid}_satisfied"] = motive.current_satisfaction >= _GOAP_MOTIVE_SATISFACTION_THRESHOLD
-        p = self.emotion.pleasure if hasattr(self.emotion, 'pleasure') else 0.0
-        a = self.emotion.arousal if hasattr(self.emotion, 'arousal') else 0.0
-        d = self.emotion.dominance if hasattr(self.emotion, 'dominance') else 0.0
-        facts["is_alone"] = not getattr(self, '_in_conversation', False)
-        facts["threat_present"] = p < _GOAP_THREAT_PLEASURE_THRESHOLD
-        facts["emotion_suppressed"] = a < _GOAP_SUPPRESSED_AROUSAL_THRESHOLD
-        facts["has_memory"] = hasattr(self, 'memory') and self.memory.size() > 0 if hasattr(self, 'memory') and hasattr(self.memory, 'size') else False
-        facts["other_distressed"] = p < _GOAP_DISTRESSED_PLEASURE_THRESHOLD
-        facts["conversation_started"] = getattr(self, '_in_conversation', False)
+            facts[f"motive_{mid}_satisfied"] = motive.current_satisfaction >= 0.7
         return GOAPWorldState(data=facts)
 
+    @staticmethod
+    def _classify_action_type(action: GOAPAction) -> str:
+        name = action.name.lower()
+        if any(k in name for k in ["attack", "fight", "flee", "defend"]):
+            return "risky_action"
+        if any(k in name for k in ["talk", "chat", "greet", "negotiate"]):
+            return "social_interaction"
+        if any(k in name for k in ["plan", "prepare", "organize"]):
+            return "careful_planning"
+        if any(k in name for k in ["create", "invent", "experiment"]):
+            return "creative_solution"
+        return "general_action"
+
+    def _evaluate_action_utility(
+        self, action: GOAPAction, context: Dict[str, Any]
+    ) -> float:
+        cost_factor = 1.0 / (1.0 + action.cost)
+        goal_relevance = 1.0 if self._current_goal else 0.5
+        context_bonus = context.get("action_bonus", 0.0)
+        return cost_factor * goal_relevance + context_bonus
+
     def _emotion_modifier(self) -> float:
-        p = (self.emotion.pleasure + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE
-        a = (self.emotion.arousal + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE
-        d = (self.emotion.dominance + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE
-        return _EMOTION_MODIFIER_P_WEIGHT * p + _EMOTION_MODIFIER_A_WEIGHT * a + _EMOTION_MODIFIER_D_WEIGHT * d
+        p = (self.emotion.pleasure + 1.0) / 2.0
+        a = (self.emotion.arousal + 1.0) / 2.0
+        d = (self.emotion.dominance + 1.0) / 2.0
+        return 0.4 * p + 0.3 * a + 0.3 * d
 
-    def _rng_if_available(self):
-        try:
-            from luqi_engine.core.rng import PCGRandom
-            return PCGRandom()
-        except Exception as exc:
-            _logger.debug("PCGRandom不可用，降级为None: %s", exc)
-            return None
-
-    def _bind_consideration_inputs(self) -> None:
-        """将PAD/OCEAN运行时值绑定到UtilityBasedAI的Consideration.input_fn"""
-        ocean = self.personality.to_dict() if hasattr(self.personality, "to_dict") else {}
-        p = self.emotion.pleasure if hasattr(self.emotion, "pleasure") else 0.0
-        a = self.emotion.arousal if hasattr(self.emotion, "arousal") else 0.0
-        d = self.emotion.dominance if hasattr(self.emotion, "dominance") else 0.0
-        input_map: Dict[str, Callable[[], float]] = {
-            "extraversion": lambda: ocean.get("extraversion", _OCEAN_SCORE_DEFAULT) / _OCEAN_SCORE_SCALE,
-            "arousal": lambda: (a + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE,
-            "openness": lambda: ocean.get("openness", _OCEAN_SCORE_DEFAULT) / _OCEAN_SCORE_SCALE,
-            "pleasure": lambda: (p + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE,
-            "neuroticism": lambda: ocean.get("neuroticism", _OCEAN_SCORE_DEFAULT) / _OCEAN_SCORE_SCALE,
-            "safety_urgency": lambda: max(_MOTIVE_STRENGTH_CLAMP_MIN, -p),
-            "conscientiousness": lambda: ocean.get("conscientiousness", _OCEAN_SCORE_DEFAULT) / _OCEAN_SCORE_SCALE,
-            "dominance": lambda: (d + _EMOTION_NORMALIZATION_OFFSET) / _EMOTION_NORMALIZATION_SCALE,
-            "low_pleasure": lambda: max(_MOTIVE_STRENGTH_CLAMP_MIN, -p),
-            "high_arousal": lambda: max(_MOTIVE_STRENGTH_CLAMP_MIN, a),
-        }
-        for behavior in self.utility_ai._behaviors:
-            for consideration in behavior.considerations:
-                if consideration.name in input_map:
-                    consideration.input_fn = input_map[consideration.name]
+    @staticmethod
+    def _adaptive_temperature(context: Dict[str, Any]) -> float:
+        base = 1.0
+        if context.get("in_combat"):
+            base *= 0.5
+        if context.get("is_safe_zone"):
+            base *= 1.5
+        if context.get("hp_ratio", 1.0) < 0.3:
+            base *= 0.7
+        return base
 
     def _personality_consistency(self, action: Dict[str, Any]) -> float:
-        """根据OCEAN特质评估行动的性格一致性(0-1)"""
         action_type = action.get("type", "general")
         p = self.personality
-        if action_type == "risky" and p.get_score("openness") < _OCEAN_LOW_SCORE_THRESHOLD:
-            return _PERSONALITY_CONSISTENCY_LOW_OPENNESS_RISKY
-        if action_type == "social" and p.get_score("extraversion") < _OCEAN_LOW_SCORE_THRESHOLD:
-            return _PERSONALITY_CONSISTENCY_LOW_EXTRAVERSION_SOCIAL
-        if action_type == "careful" and p.get_score("conscientiousness") > _OCEAN_HIGH_SCORE_THRESHOLD:
-            return _PERSONALITY_CONSISTENCY_HIGH_CONSCIENTIOUSNESS_CAREFUL
-        return _PERSONALITY_CONSISTENCY_DEFAULT
+        if action_type == "risky" and p.get_score("openness") < 30:
+            return 0.6
+        if action_type == "social" and p.get_score("extraversion") < 30:
+            return 0.7
+        if action_type == "careful" and p.get_score("conscientiousness") > 70:
+            return 1.0
+        return 0.9
 
     def _emotion_consistency(self, action: Dict[str, Any]) -> float:
-        """根据PAD情感状态评估行动的情感一致性(0-1)"""
-        if self.emotion.pleasure < _PLEASURE_LOW_THRESHOLD and action.get("type") == "friendly":
-            return _EMOTION_CONSISTENCY_LOW_PLEASURE_FRIENDLY
-        if self.emotion.arousal > _AROUSAL_HIGH_THRESHOLD and action.get("type") == "passive":
-            return _EMOTION_CONSISTENCY_HIGH_AROUSAL_PASSIVE
-        return _EMOTION_CONSISTENCY_DEFAULT
+        if self.emotion.pleasure < -0.5 and action.get("type") == "friendly":
+            return 0.6
+        if self.emotion.arousal > 0.5 and action.get("type") == "passive":
+            return 0.7
+        return 0.9
 
     def _memory_consistency(self, action: Dict[str, Any]) -> float:
-        """根据记忆中的情感效价评估行动的记忆一致性(0-1)"""
         target = action.get("target", "")
         if target:
             memories = self.memory.retrieve(query=target, limit=5)
             for mem in memories:
-                if mem.emotional_valence < _MEMORY_NEGATIVE_VALENCE_THRESHOLD and action.get("type") == "helpful":
-                    return _MEMORY_CONSISTENCY_NEGATIVE_VALENCE_HELPFUL
-        return _MEMORY_CONSISTENCY_DEFAULT
+                if mem.emotional_valence < -0.5 and action.get("type") == "helpful":
+                    return 0.6
+        return 0.9

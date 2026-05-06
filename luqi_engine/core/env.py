@@ -1,5 +1,3 @@
-"""环境变量模块 - 管理环境变量读取"""
-
 from __future__ import annotations
 
 import os

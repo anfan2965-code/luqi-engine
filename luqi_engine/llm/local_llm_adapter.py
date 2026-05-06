@@ -1,5 +1,3 @@
-"""本地LLM适配器 - 支持GGUF和HuggingFace模型"""
-
 from __future__ import annotations
 
 import logging
@@ -10,24 +8,21 @@ from pathlib import Path
 from luqi_engine.core.interfaces import ILLMBridge
 from luqi_engine.core.types import LLMRequest, LLMResponse, LLMStreamChunk, SDKType
 
-_logger = logging.getLogger(__name__)
-
 
 class LocalLLMAdapter(ILLMBridge):
     def __init__(self, model_path: str = "", n_gpu_layers: int = 0, n_ctx: int = 2048,
-                 max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9,
-                 trust_remote_code: bool = False) -> None:
+                 max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9) -> None:
         self._model_path = model_path
         self._n_gpu_layers = n_gpu_layers
         self._n_ctx = n_ctx
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
-        self._trust_remote_code = trust_remote_code
         self._model: Optional[Any] = None
         self._tokenizer: Optional[Any] = None
         self._hf_mode: bool = False
         self._loaded = False
+        self._logger = logging.getLogger(__name__)
 
     def _ensure_loaded(self) -> None:
         if self._loaded and self._model is not None:
@@ -63,27 +58,22 @@ class LocalLLMAdapter(ILLMBridge):
         try:
             from transformers import AutoModelForCausalLM, AutoTokenizer
             import torch
-            _logger.info("Loading HuggingFace model from: %s", self._model_path)
-            # 安全检查：如果禁用trust_remote_code，记录警告
-            if not self._trust_remote_code:
-                _logger.warning("trust_remote_code is disabled. "
-                                "Some models may require this to be enabled.")
-            
+            print("[LocalLLMAdapter] Loading HuggingFace model from: {}".format(self._model_path))
             self._tokenizer = AutoTokenizer.from_pretrained(
-                self._model_path, trust_remote_code=self._trust_remote_code
+                self._model_path, trust_remote_code=True
             )
             if self._tokenizer.pad_token is None:
                 self._tokenizer.pad_token = self._tokenizer.eos_token
             self._model = AutoModelForCausalLM.from_pretrained(
                 self._model_path,
-                trust_remote_code=self._trust_remote_code,
+                trust_remote_code=True,
                 torch_dtype=torch.float16,
                 device_map="cpu",
             )
             self._model.eval()
             self._hf_mode = True
             self._loaded = True
-            _logger.info("HuggingFace model loaded successfully")
+            print("[LocalLLMAdapter] HuggingFace model loaded successfully")
         except ImportError as e:
             raise ImportError(
                 "transformers and torch are required for HuggingFace mode. "
@@ -129,13 +119,13 @@ class LocalLLMAdapter(ILLMBridge):
                 tokens=usage.get("total_tokens", 0),
             )
         except Exception as e:
+            self._logger.error("GGUF推理失败: %s", e, exc_info=True)
             return LLMResponse(
                 content="",
                 role="assistant",
                 finish_reason="error",
                 usage={},
                 tokens=0,
-                thinking="LocalLLMAdapter error: {}".format(str(e)),
             )
 
     async def _chat_hf(self, request: LLMRequest) -> LLMResponse:
@@ -171,13 +161,13 @@ class LocalLLMAdapter(ILLMBridge):
                 tokens=outputs.shape[1],
             )
         except Exception as e:
+            self._logger.error("HuggingFace推理失败: %s", e, exc_info=True)
             return LLMResponse(
                 content="",
                 role="assistant",
                 finish_reason="error",
                 usage={},
                 tokens=0,
-                thinking="LocalLLMAdapter HF error: {}".format(str(e)),
             )
 
     async def chat_stream(self, request: LLMRequest) -> AsyncIterator[LLMStreamChunk]:
@@ -210,6 +200,7 @@ class LocalLLMAdapter(ILLMBridge):
                 if content:
                     yield LLMStreamChunk(delta=content, finish_reason=finish_reason)
         except Exception as e:
+            self._logger.error("GGUF流式推理失败: %s", e, exc_info=True)
             yield LLMStreamChunk(
                 delta="",
                 finish_reason="error",
@@ -245,6 +236,7 @@ class LocalLLMAdapter(ILLMBridge):
                 thread.join(timeout=30)
             yield LLMStreamChunk(delta="", finish_reason="stop")
         except Exception as e:
+            self._logger.error("HuggingFace流式推理失败: %s", e, exc_info=True)
             yield LLMStreamChunk(
                 delta="",
                 finish_reason="error",
@@ -264,7 +256,8 @@ class LocalLLMAdapter(ILLMBridge):
         try:
             self._ensure_loaded()
             return self._loaded
-        except Exception:
+        except Exception as e:
+            self._logger.debug("模型验证失败: %s", e)
             return False
 
     def get_sdk_type(self) -> SDKType:

@@ -121,7 +121,7 @@ class EngineInitializer:
             self._init_performance(engine)
             self._init_agents_and_schedulers(engine)
             engine.load_snapshot(snapshot_path)
-            self._record_phase(_INIT_PHASE_COMPLETE)
+            self._record_phase(_INIT_PHASE_COMPLETE, engine)
             engine._initialized = True
             self._logger.info("引擎从快照成功恢复，跳过完整初始化流程")
             await engine._event_bus.publish_async(Event(
@@ -130,7 +130,7 @@ class EngineInitializer:
                 payload={"action": "initialized_from_snapshot", "version": _ENGINE_VERSION},
             ))
             return True
-        except (SnapshotError, Exception) as exc:
+        except Exception as exc:
             self._logger.warning("快照恢复异常: %s", exc)
             return False
 
@@ -178,7 +178,7 @@ class EngineInitializer:
         self._init_local_model(engine)
         self._init_performance(engine)
 
-        self._record_phase(_INIT_PHASE_COMPLETE)
+        self._record_phase(_INIT_PHASE_COMPLETE, engine)
         engine._initialized = True
 
         self._init_agents_and_schedulers(engine)
@@ -191,19 +191,19 @@ class EngineInitializer:
 
     def _init_seed_hierarchy(self, engine: Any) -> None:
         """初始化种子层级和RNG管理器"""
-        self._record_phase(_INIT_PHASE_CONFIG)
+        self._record_phase(_INIT_PHASE_CONFIG, engine)
         seed = engine._config.seed or int(time.time() * _MS_PER_SECOND)
         engine._seed_hierarchy = NarrativeSeedHierarchy(root_seed=seed)
         engine._rng_manager = SeededRNGManager(master_seed=seed)
 
     def _init_core(self, engine: Any) -> None:
         """初始化核心事件总线"""
-        self._record_phase(_INIT_PHASE_CORE)
+        self._record_phase(_INIT_PHASE_CORE, engine)
         engine._event_bus.resume()
 
     def _init_modules(self, engine: Any) -> None:
         """初始化核心模块：世界观/场景/角色/叙事/交互"""
-        self._record_phase(_INIT_PHASE_MODULES)
+        self._record_phase(_INIT_PHASE_MODULES, engine)
         engine._worldview = WorldViewRenderer()
         engine._scene_builder = SceneBuilder(config=engine._config.scene)
         engine._character_manager = CharacterManager(config=engine._config.character)
@@ -220,11 +220,11 @@ class EngineInitializer:
 
     def _init_llm(self, engine: Any) -> None:
         """初始化LLM层：对话模式/降级/桥接/输出校正"""
-        self._record_phase(_INIT_PHASE_LLM)
+        self._record_phase(_INIT_PHASE_LLM, engine)
         engine._dialogue_modes = DialogueModes()
         engine._fallback = LLMFallback()
 
-        self._record_phase(_INIT_PHASE_LOCAL_LLM)
+        self._record_phase(_INIT_PHASE_LOCAL_LLM, engine)
         engine._state_renderer = StateRenderer()
         engine._intent_classifier = IntentClassifier()
         engine._local_llm_adapter = None
@@ -259,7 +259,7 @@ class EngineInitializer:
 
     def _init_local_model(self, engine: Any) -> None:
         """初始化本地模型管线"""
-        self._record_phase(_INIT_PHASE_LOCAL_MODEL)
+        self._record_phase(_INIT_PHASE_LOCAL_MODEL, engine)
         engine._local_model = LocalModelPipeline(config=engine._config.local_model)
         if engine._fallback is not None and engine._local_llm_adapter is not None:
             engine._fallback.set_local_llm_adapter(
@@ -269,7 +269,7 @@ class EngineInitializer:
 
     def _init_performance(self, engine: Any) -> None:
         """初始化性能管理层"""
-        self._record_phase(_INIT_PHASE_PERFORMANCE)
+        self._record_phase(_INIT_PHASE_PERFORMANCE, engine)
         engine._pool_manager = PoolManager(config=engine._config.performance)
         engine._resource_manager = ResourceManager(
             mobile_config=engine._config.mobile,
@@ -296,5 +296,7 @@ class EngineInitializer:
         engine._sample_collector = SampleCollector(engine._config.training)
         engine._doc_protector = DegradationDocumentProtector()
 
-    def _record_phase(self, phase: str) -> None:
+    def _record_phase(self, phase: str, engine: Any = None) -> None:
         self._init_phases.append(phase)
+        if engine is not None:
+            engine._init_phases = list(self._init_phases)

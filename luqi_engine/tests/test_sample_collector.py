@@ -1,5 +1,3 @@
-"""样本收集器测试"""
-
 from __future__ import annotations
 
 import os

@@ -1,5 +1,3 @@
-"""世界观渲染器测试"""
-
 import asyncio
 import pytest
 from luqi_engine.worldview.renderer import WorldViewRenderer

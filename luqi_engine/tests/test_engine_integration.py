@@ -1,5 +1,3 @@
-"""引擎集成测试"""
-
 from __future__ import annotations
 
 import asyncio

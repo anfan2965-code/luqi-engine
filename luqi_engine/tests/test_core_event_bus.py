@@ -1,5 +1,3 @@
-"""事件总线测试"""
-
 import asyncio
 import time
 import pytest

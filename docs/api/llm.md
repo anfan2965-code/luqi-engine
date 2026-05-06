@@ -1,163 +1,383 @@
-# LLM 模块
+# 大语言模型集成 (LLM)
 
-LLM模块负责与大语言模型的交互，包括适配器注册、意图分类、状态渲染和降级容错。
+多适配器LLM桥接、意图分类、Prompt构建和响应解析。
 
-## 核心组件
+## 模块概览
 
-::: luqi_engine.llm.bridge
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
+```
+luqi_engine/llm/
+├── bridge.py              — LLMBridge 统一LLM接口
+├── adapter_registry.py    — AdapterRegistry 适配器注册表
+├── openai_adapter.py      — OpenAIAdapter OpenAI接口
+├── anthropic_adapter.py   — AnthropicAdapter Anthropic接口
+├── local_llm_adapter.py   — LocalLLMAdapter 本地模型适配
+├── intent_classifier.py   — IntentClassifier 意图分类器
+├── state_renderer.py      — StateRenderer 状态渲染器
+├── prompt_builder.py      — PromptBuilder Prompt构建
+├── response_parser.py     — ResponseParser 响应解析
+├── dialogue_modes.py      — DialogueModes 对话模式
+├── fallback.py            — LLMFallback 降级处理
+├── deepseek_optimizer.py  — DeepSeekOptimizer DeepSeek优化
+└── output_corrector.py    — OutputCorrector 输出校正
+```
 
-::: luqi_engine.llm.intent_classifier
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.state_renderer
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.fallback
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.adapter_registry
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.dialogue_modes
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.prompt_builder
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.response_parser
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.local_llm_adapter
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-::: luqi_engine.llm.deepseek_optimizer
-    options:
-      show_root_heading: true
-      show_root_toc_entry: true
-
-## 意图分类 (IntentClassifier)
-
-IntentClassifier 负责判断用户输入的复杂度级别：
+## LLMBridge — 统一LLM接口 ⭐ 核心
 
 ```python
+class LLMBridge(ILLMBridge):
+    """统一大语言模型桥接接口
+
+    支持功能:
+    - complete(): 同步补全
+    - generate(): 异步流式生成
+    - embed(): 文本向量化 (可选)
+    - fallback: 降级处理器
+    """
+
+    def __init__(
+        self,
+        model_name: str = "",
+        api_key: str = "",
+        base_url: str = "",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        **kwargs,
+    ) -> None: ...
+
+    async def complete(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        **kwargs,
+    ) -> LLMResponse:
+        """同步补全请求"""
+
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs,
+    ) -> AsyncIterator[LLMStreamChunk]:
+        """异步流式生成"""
+
+    async def embed(self, texts: List[str]) -> List[List[float]]:
+        """文本向量化 (可选实现)"""
+
+    @property
+    def fallback(self) -> LLMFallback:
+        """获取降级处理器"""
+
+    @property
+    def model_name(self) -> str: ...
+    @property
+    def is_available(self) -> bool: ...
+```
+
+## AdapterRegistry — 适配器注册表
+
+```python
+class AdapterRegistry:
+    """LLM适配器注册与管理
+
+    内置适配器:
+    - openai: OpenAIAdapter (GPT-4/GPT-3.5)
+    - anthropic: AnthropicAdapter (Claude)
+    - local: LocalLLMAdapter (本地部署)
+    """
+
+    def __init__(self) -> None: ...
+
+    def register(self, name: str, adapter_class: Type[Any]) -> None:
+        """注册新适配器"""
+
+    def create(
+        self,
+        name: str,
+        **config,
+    ) -> LLMBridge:
+        """创建适配器实例"""
+
+    def list_available(self) -> List[str]:
+        """列出所有已注册适配器"""
+
+    def get_default(self) -> str:
+        """获取默认适配器名称"""
+```
+
+## IntentClassifier — 意图分类器
+
+```python
+class IntentLevel(Enum):
+    SINGLE_TURN = "single_turn"       # 单轮对话
+    MULTI_TURN_CONTEXT = "multi_turn_context"  # 多轮上下文
+    COMMAND = "command"               # 指令/命令
+    META_REQUEST = "meta_request"     # 元请求 (切换角色等)
+
+
+class IntentClassifier:
+    """用户输入意图快速分类
+
+    分类规则 (优先级从高到低):
+    1. 命令前缀匹配 (/switch /reset /status ...)
+    2. 元请求关键词 (切换/选择/帮助)
+    3. 上下文引用 (@角色名 / 上次 / 继续)
+    4. 默认单轮对话
+    """
+
+    def __init__(self, config: Optional[IntentKeywordConfig] = None) -> None: ...
+
+    def classify(
+        self,
+        user_input: str,
+        num_characters: int = 1,
+    ) -> IntentLevel:
+        """分类用户意图
+
+        Returns:
+          IntentLevel 枚举值
+        """
+```
+
+## StateRenderer — 状态渲染器
+
+```python
+@dataclass
+class TokenBudgetProfile:
+    system_prompt_max: int = 2000
+    character_state_max: int = 1500
+    narrative_context_max: int = 1000
+    world_state_max: int = 500
+    recent_history_max: int = 1500
+
+
+class StateRenderer:
+    """引擎状态 → LLM Prompt 渲染
+
+    功能:
+    - render_system_prompt(): 系统提示词
+    - render_deep_state(): 深度状态 (含心理分析)
+    - render_with_token_budget(): Token预算控制渲染
+    """
+
+    def __init__(self, budget: Optional[TokenBudgetProfile] = None) -> None: ...
+
+    def render_system_prompt(
+        self,
+        character: Any,
+        world_state: Optional[Dict[str, Any]] = None,
+    ) -> str: ...
+
+    def render_deep_state(
+        self,
+        character: Any,
+        include_psychological: bool = True,
+    ) -> str: ...
+
+    def render_with_token_budget(
+        self,
+        character: Any,
+        narrative: Any,
+        world_view: Any,
+        history: List[Dict[str, str]],
+        max_tokens: int = 8000,
+    ) -> Tuple[str, int]:
+        """返回 (prompt内容, 实际token数)"""
+```
+
+## ResponseParser — 响应解析
+
+```python
+@dataclass
+class ParsedAction:
+    action: str
+    params: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ParsedDialogue:
+    content: str
+    inner_thought: str = ""
+    tone: str = ""
+
+
+@dataclass
+class ParsedEmotionDelta:
+    pleasure: float = 0.0
+    arousal: float = 0.0
+    dominance: float = 0.0
+
+
+@dataclass
+class ParsedResponse:
+    action: ParsedAction
+    dialogue: ParsedDialogue
+    emotion_delta: ParsedEmotionDelta
+    narrative_signal: str = ""
+    raw_text: str = ""
+
+
+class ResponseParser:
+    """LLM原始响应 → 结构化数据解析
+
+    解析流程:
+    1. 提取XML标签 <action> <dialogue> <emotion> <signal>
+    2. JSON fallback (无标签时尝试JSON解析)
+    3. 兜底正则提取
+    4. 字段校验与钳制
+    """
+
+    def __init__(self) -> None: ...
+
+    def parse(self, raw_response: str) -> ParsedResponse:
+        """解析LLM响应为结构化数据"""
+
+    def validate_action(self, action: ParsedAction) -> bool: ...
+    def validate_emotion(self, emotion: ParsedEmotionDelta) -> bool: ...
+```
+
+## LLMFallback — 降级处理系统
+
+```python
+class DegradationLevel(Enum):
+    NONE = "none"                   # 无降级
+    LOCAL_ONLY = "local_only"       # 仅本地模型
+    RULE_BASED = "rule_based"       # 规则模板
+    CACHED_RESPONSE = "cached_response"  # 缓存响应
+    ECHO = "echo"                   # 回声模式
+
+
+class AtmosphereDegradationMode(Enum):
+    SKIP = "skip"                   # 跳过氛围渲染
+    TEMPLATE = "template"           # 使用固定模板
+    MINIMAL = "minimal"             # 最简模式
+
+
+@dataclass
+class FallbackStats:
+    total_requests: int = 0
+    fallback_count: int = 0
+    degradation_level: DegradationLevel = DegradationLevel.NONE
+    last_fallback_time: float = 0.0
+    error_log: List[str] = field(default_factory=list)
+
+
+class LLMFallback:
+    """多级降级处理
+
+    降级链:
+      Cloud API失败 → LocalLLMAdapter → RuleBased → Cached → Echo
+
+    氛围降级:
+      FULL → MINIMAL → TEMPLATE → SKIP
+    """
+
+    def __init__(self, config: Optional[FallbackConfig] = None) -> None: ...
+
+    async def handle_fallback(
+        self,
+        request: LLMRequest,
+        error: Exception,
+    ) -> LLMResponse:
+        """执行降级处理"""
+
+    def get_current_level(self) -> DegradationLevel: ...
+    def get_stats(self) -> FallbackStats: ...
+```
+
+## DialogueModes — 对话模式
+
+```python
+class DialogueMode(Enum):
+    SINGLE = "single"                 # 单角色对话
+    MULTI_TURN = "multi_turn"         # 多轮连续
+    MULTI_CHARACTER = "multi_character"  # 多角色群聊
+    NARRATIVE = "narrative"           # 叙事驱动
+
+
+@dataclass
+class SingleCharacterConfig:
+    character_id: str
+    max_history Turns: int = 20
+    response_style: str = "immersive"
+
+
+@dataclass
+class MultiCharacterConfig:
+    character_ids: List[str]
+    turn_allocation: TurnAllocation = TurnAllocation.ROUND_ROBIN
+    cross_character_awareness: bool = True
+
+
+class DialogueModes:
+    """对话模式配置管理"""
+
+    def __init__(self) -> None: ...
+
+    def set_mode(self, mode: DialogueMode) -> None: ...
+    def configure_single(self, config: SingleCharacterConfig) -> None: ...
+    def configure_multi(self, config: MultiCharacterConfig) -> None: ...
+    def get_mode(self) -> DialogueMode: ...
+```
+
+## DeepSeekOptimizer — DeepSeek优化器
+
+```python
+@dataclass
+class CompressionResult:
+    original_tokens: int
+    compressed_tokens: int
+    compression_ratio: float
+    compressed_text: str
+    preserved_keys: List[str]
+
+
+class DeepSeekOptimizer:
+    """基于DeepSeek的长文本压缩优化
+
+    用途:
+    - 压缩历史对话以节省token
+    - 提取关键信息保留语义
+    - 动态压缩比控制
+    """
+
+    def __init__(self, model_name: str = "deepseek-chat") -> None: ...
+
+    async def compress(
+        self,
+        text: str,
+        target_ratio: float = 0.5,
+        preserve_keys: Optional[List[str]] = None,
+    ) -> CompressionResult:
+        """压缩文本并返回结果"""
+```
+
+## 使用示例
+
+```python
+from luqi_engine.llm.bridge import LLMBridge
+from luqi_engine.llm.adapter_registry import AdapterRegistry
 from luqi_engine.llm.intent_classifier import IntentClassifier, IntentLevel
-
-classifier = IntentClassifier()
-
-# 分类示例
-level = classifier.classify("你好")
-# 返回: IntentLevel.SIMPLE
-
-level = classifier.classify("我很难过，你能安慰我吗")
-# 返回: IntentLevel.MODERATE
-
-level = classifier.classify("给我讲一个关于这个世界的完整故事背景")
-# 返回: IntentLevel.COMPLEX
-```
-
-### 分级标准
-
-| 级别 | 长度范围 | 处理方式 | 典型场景 |
-|------|----------|----------|----------|
-| `SIMPLE` | ≤20字符 | 本地LLM | 问候、简单问答 |
-| `MODERATE` | 21-100字符 | 本地LLM | 日常对话、情感表达 |
-| `COMPLEX` | >100字符 | 云端LLM | 复杂推理、长文本生成 |
-
-## 状态渲染 (StateRenderer)
-
-StateRenderer 将角色状态转换为系统提示词：
-
-```python
 from luqi_engine.llm.state_renderer import StateRenderer
+from luqi_engine.llm.response_parser import ResponseParser
 
+# 注册和使用适配器
+registry = AdapterRegistry()
+bridge = registry.create("openai", api_key="sk-...", model_name="gpt-4")
+
+# 意图分类
+classifier = IntentClassifier()
+intent = classifier.classify("/switch 角色2", num_characters=2)
+print(f"意图: {intent.name}")  # COMMAND
+
+# 状态渲染
 renderer = StateRenderer()
+prompt = renderer.render_system_prompt(character=some_char)
 
-prompt = renderer.render_system_prompt(
-    character_name="小雪",
-    personality={
-        "openness": 85,
-        "conscientiousness": 70,
-        "extraversion": 35,
-        "agreeableness": 75,
-        "neuroticism": 55,
-    },
-    pad_emotion={
-        "pleasure": -0.3,
-        "arousal": 0.2,
-        "dominance": -0.1,
-    },
-    scene="教室",
-    behavior_instruction="温柔地回应",
-    memories=[{"content": "昨天聊过天气"}],
-    background="转学生",
-)
-print(prompt)
+# 响应解析
+parser = ResponseParser()
+parsed = parser.parse("""<action>attack</action>
+<dialogue>我不会放过你！</dialogue>
+<emotion>pleasure=-0.3 arousal=0.6 dominance=0.4</emotion>""")
+print(f"行动: {parsed.action.action}")
+print(f"对话: {parsed.dialogue.content}")
 ```
-
-## 降级容错 (LLMFallback)
-
-四级降级机制确保离线/故障时的可用性：
-
-```python
-from luqi_engine.llm.fallback import LLMFallback, DegradationLevel
-
-fallback = LLMFallback()
-
-# 查询当前降级级别
-level = fallback.current_level
-# DegradationLevel.NORMAL / DEGRADED / SEVERELY_DEGRADED / OFFLINE
-
-# 手动设置降级
-fallback.set_degradation_level(DegradationLevel.OFFLINE)
-```
-
-### 降级策略
-
-| 级别 | 连续失败次数 | 行为 |
-|------|-------------|------|
-| `NORMAL` | 0-2次 | 正常使用云端LLM |
-| `DEGRADED` | 3-5次 | 降低请求频率，启用缓存 |
-| `SEVERELY_DEGRADED` | 6-9次 | 主要使用本地模型 |
-| `OFFLINE` | ≥10次 | 完全切换到本地模型 |
-
-## 对话模式 (DialogueModes)
-
-支持多种对话模式：
-
-```python
-from luqi_engine.llm.dialogue_modes import DialogueMode
-
-mode = DialogueMode.SINGLE_CHARACTER    # 单角色对话
-mode = DialogueMode.MULTI_CHARACTER     # 多角色对话（默认）
-```
-
-## LLM适配器
-
-支持多种LLM后端：
-
-::: luqi_engine.llm.openai_adapter
-    options:
-      show_root_heading: true
-
-::: luqi_engine.llm.anthropic_adapter
-    options:
-      show_root_heading: true

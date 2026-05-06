@@ -1,5 +1,3 @@
-"""输出纠正器 - 纠正LLM输出格式"""
-
 from __future__ import annotations
 
 import copy

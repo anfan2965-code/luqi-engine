@@ -1,5 +1,3 @@
-"""自动模式测试"""
-
 import asyncio
 
 import pytest
